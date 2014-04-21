@@ -8,6 +8,7 @@
 #ifndef _ASM_ELF_H
 #define _ASM_ELF_H
 
+#include <linux/auxvec.h>
 #include <linux/fs.h>
 #include <uapi/linux/elf.h>
 
@@ -417,6 +418,12 @@ extern const char *__elf_platform;
 #define ELF_ET_DYN_BASE		(TASK_SIZE / 3 * 2)
 #endif
 
+#define ARCH_DLINFO							\
+do {									\
+	NEW_AUX_ENT(AT_SYSINFO_EHDR,					\
+		    (unsigned long)current->mm->context.vdso);		\
+} while (0)
+
 #define ARCH_HAS_SETUP_ADDITIONAL_PAGES 1
 struct linux_binprm;
 extern int arch_setup_additional_pages(struct linux_binprm *bprm,
@@ -447,5 +454,8 @@ extern int arch_check_elf(void *ehdr, bool has_interpreter,
 			  struct arch_elf_state *state);
 
 extern void mips_set_personality_fp(struct arch_elf_state *state);
+
+#define elf_read_implies_exec(ex, stk) mips_elf_read_implies_exec(&(ex), stk)
+extern int mips_elf_read_implies_exec(void *elf_ex, int exstack);
 
 #endif /* _ASM_ELF_H */

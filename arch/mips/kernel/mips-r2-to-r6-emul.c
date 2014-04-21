@@ -282,7 +282,7 @@ static int jr_func(struct pt_regs *regs, u32 ir)
 		err = mipsr6_emul(regs, nir);
 		if (err > 0) {
 			regs->cp0_epc = nepc;
-			err = mips_dsemul(regs, nir, cepc);
+			err = mips_dsemul(regs, nir, epc, cepc);
 			if (err == SIGILL)
 				err = SIGEMT;
 			MIPS_R2_STATS(dsemul);
@@ -1032,7 +1032,7 @@ repeat:
 			if (nir) {
 				err = mipsr6_emul(regs, nir);
 				if (err > 0) {
-					err = mips_dsemul(regs, nir, cpc);
+					err = mips_dsemul(regs, nir, epc, cpc);
 					if (err == SIGILL)
 						err = SIGEMT;
 					MIPS_R2_STATS(dsemul);
@@ -1081,7 +1081,7 @@ repeat:
 			if (nir) {
 				err = mipsr6_emul(regs, nir);
 				if (err > 0) {
-					err = mips_dsemul(regs, nir, cpc);
+					err = mips_dsemul(regs, nir, epc, cpc);
 					if (err == SIGILL)
 						err = SIGEMT;
 					MIPS_R2_STATS(dsemul);
@@ -1153,7 +1153,7 @@ repeat:
 		if (nir) {
 			err = mipsr6_emul(regs, nir);
 			if (err > 0) {
-				err = mips_dsemul(regs, nir, cpc);
+				err = mips_dsemul(regs, nir, epc, cpc);
 				if (err == SIGILL)
 					err = SIGEMT;
 				MIPS_R2_STATS(dsemul);
