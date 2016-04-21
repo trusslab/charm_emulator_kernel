@@ -440,6 +440,8 @@ static int isBranchInstr(struct pt_regs *regs, struct mm_decoded_insn dec_insn,
 	union mips_instruction insn = (union mips_instruction)dec_insn.insn;
 	unsigned int fcr31;
 	unsigned int bit = 0;
+	unsigned int bit0;
+	union fpureg *fpr;
 
 	switch (insn.i_format.opcode) {
 	case spec_op:
@@ -627,8 +629,8 @@ static int isBranchInstr(struct pt_regs *regs, struct mm_decoded_insn dec_insn,
 				dec_insn.pc_inc +
 				dec_insn.next_pc_inc;
 		return 1;
-	case cbcond0_op:
-	case cbcond1_op:
+	case pop10_op:
+	case pop30_op:
 		if (!cpu_has_mips_r6)
 			break;
 		if (insn.i_format.rt && !insn.i_format.rs)
@@ -683,14 +685,14 @@ static int isBranchInstr(struct pt_regs *regs, struct mm_decoded_insn dec_insn,
 			dec_insn.next_pc_inc;
 
 		return 1;
-	case beqzcjic_op:
+	case pop66_op:
 		if (!cpu_has_mips_r6)
 			break;
 		*contpc = regs->cp0_epc + dec_insn.pc_inc +
 			dec_insn.next_pc_inc;
 
 		return 1;
-	case bnezcjialc_op:
+	case pop76_op:
 		if (!cpu_has_mips_r6)
 			break;
 		if (!insn.i_format.rs)
@@ -707,14 +709,14 @@ static int isBranchInstr(struct pt_regs *regs, struct mm_decoded_insn dec_insn,
 		    ((insn.i_format.rs == bc1eqz_op) ||
 		     (insn.i_format.rs == bc1nez_op))) {
 			bit = 0;
+			fpr = &current->thread.fpu.fpr[insn.i_format.rt];
+			bit0 = get_fpr32(fpr, 0) & 0x1;
 			switch (insn.i_format.rs) {
 			case bc1eqz_op:
-				if (get_fpr32(&current->thread.fpu.fpr[insn.i_format.rt], 0) & 0x1)
-				    bit = 1;
+				bit = bit0 == 0;
 				break;
 			case bc1nez_op:
-				if (!(get_fpr32(&current->thread.fpu.fpr[insn.i_format.rt], 0) & 0x1))
-				    bit = 1;
+				bit = bit0 != 0;
 				break;
 			}
 			if (bit)
@@ -977,9 +979,10 @@ static int cop1Emulate(struct pt_regs *xcp, struct mips_fpu_struct *ctx,
 	unsigned long contpc = xcp->cp0_epc + dec_insn.pc_inc;
 	unsigned long r31;
 	unsigned long s_epc;
-	unsigned int cond, cbit;
+	unsigned int cond, cbit, bit0;
 	mips_instruction ir;
 	int likely, pc_inc;
+	union fpureg *fpr;
 	u32 __user *wva;
 	u64 __user *dva;
 	u32 wval;
@@ -1193,14 +1196,14 @@ emul:
 				return SIGILL;
 
 			cond = likely = 0;
+			fpr = &current->thread.fpu.fpr[MIPSInst_RT(ir)];
+			bit0 = get_fpr32(fpr, 0) & 0x1;
 			switch (MIPSInst_RS(ir)) {
 			case bc1eqz_op:
-				if (get_fpr32(&current->thread.fpu.fpr[MIPSInst_RT(ir)], 0) & 0x1)
-				    cond = 1;
+				cond = bit0 == 0;
 				break;
 			case bc1nez_op:
-				if (!(get_fpr32(&current->thread.fpu.fpr[MIPSInst_RT(ir)], 0) & 0x1))
-				    cond = 1;
+				cond = bit0 != 0;
 				break;
 			}
 			goto branch_common;
@@ -1272,6 +1275,8 @@ branch_common:
 						 */
 						sig = mips_dsemul(xcp, ir,
 							    contpc, s_epc, r31);
+						if (sig < 0)
+							break;
 						if (sig)
 							xcp->cp0_epc = bcpc;
 						/*
@@ -1325,6 +1330,8 @@ branch_common:
 				 * instruction in the dslot
 				 */
 				sig = mips_dsemul(xcp, ir, contpc, s_epc, r31);
+				if (sig < 0)
+					break;
 				if (sig)
 					xcp->cp0_epc = bcpc;
 				/* SIGILL forces out of the emulation loop.  */
@@ -1676,7 +1683,7 @@ static int fpu_emu(struct pt_regs *xcp, struct mips_fpu_struct *ctx,
 			union ieee754sp(*b) (union ieee754sp, union ieee754sp);
 			union ieee754sp(*u) (union ieee754sp);
 		} handler;
-		union ieee754sp fs, ft;
+		union ieee754sp fd, fs, ft;
 
 		switch (MIPSInst_FUNC(ir)) {
 			/* binary ops */
@@ -1947,6 +1954,17 @@ copcsr:
 			rfmt = w_fmt;
 			goto copcsr;
 
+		case fsel_op:
+			if (!cpu_has_mips_r6)
+				return SIGILL;
+
+			SPFROMREG(fd, MIPSInst_FD(ir));
+			if (fd.bits & 0x1)
+				SPFROMREG(rv.s, MIPSInst_FT(ir));
+			else
+				SPFROMREG(rv.s, MIPSInst_FS(ir));
+			break;
+
 		case fcvtl_op:
 			if (!cpu_has_mips_3_4_5_64_r2_r6)
 				return SIGILL;
@@ -1995,7 +2013,7 @@ copcsr:
 	}
 
 	case d_fmt: {
-		union ieee754dp fs, ft;
+		union ieee754dp fd, fs, ft;
 		union {
 			union ieee754dp(*b) (union ieee754dp, union ieee754dp);
 			union ieee754dp(*u) (union ieee754dp);
@@ -2244,6 +2262,17 @@ dcopuop:
 			ieee754_csr.rm = oldrm;
 			rfmt = w_fmt;
 			goto copcsr;
+
+		case fsel_op:
+			if (!cpu_has_mips_r6)
+				return SIGILL;
+
+			DPFROMREG(fd, MIPSInst_FD(ir));
+			if (fd.bits & 0x1)
+				DPFROMREG(rv.d, MIPSInst_FT(ir));
+			else
+				DPFROMREG(rv.d, MIPSInst_FS(ir));
+			break;
 
 		case fcvtl_op:
 			if (!cpu_has_mips_3_4_5_64_r2_r6)

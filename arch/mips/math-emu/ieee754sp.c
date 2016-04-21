@@ -37,8 +37,11 @@ static inline int ieee754sp_isnan(union ieee754sp x)
 
 static inline int ieee754sp_issnan(union ieee754sp x)
 {
+	int qbit;
+
 	assert(ieee754sp_isnan(x));
-	return (SPMANT(x) & SP_MBIT(SP_FBITS-1));
+	qbit = (SPMANT(x) & SP_MBIT(SP_FBITS - 1)) == SP_MBIT(SP_FBITS - 1);
+	return ieee754_csr.nan2008 ^ qbit;
 }
 
 
@@ -51,7 +54,15 @@ union ieee754sp __cold ieee754sp_nanxcpt(union ieee754sp r)
 	assert(ieee754sp_issnan(r));
 
 	ieee754_setcx(IEEE754_INVALID_OPERATION);
-	return ieee754sp_indef();
+	if (ieee754_csr.nan2008) {
+		SPMANT(r) |= SP_MBIT(SP_FBITS - 1);
+	} else {
+		SPMANT(r) &= ~SP_MBIT(SP_FBITS - 1);
+		if (!ieee754sp_isnan(r))
+			SPMANT(r) |= SP_MBIT(SP_FBITS - 2);
+	}
+
+	return r;
 }
 
 static unsigned ieee754sp_get_rounding(int sn, unsigned xm)
@@ -130,7 +141,8 @@ union ieee754sp ieee754sp_format(int sn, int xe, unsigned xm)
 		} else {
 			/* sticky right shift es bits
 			 */
-			SPXSRSXn(es);
+			xm = XSPSRS(xm, es);
+			xe += es;
 			assert((xm & (SP_HIDDEN_BIT << 3)) == 0);
 			assert(xe == SP_EMIN);
 		}

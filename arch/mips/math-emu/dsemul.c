@@ -39,17 +39,33 @@ struct emuframe {
 int mips_dsemul(struct pt_regs *regs, mips_instruction ir, unsigned long cpc,
 		unsigned long bpc, unsigned long r31)
 {
-	extern asmlinkage void handle_dsemulret(void);
 	struct emuframe __user *fr;
 	int err;
 	unsigned char *pg_addr;
 
-	if ((get_isa16_mode(regs->cp0_epc) && ((ir >> 16) == MM_NOP16)) ||
-		(ir == 0)) {
-		/* NOP is easy */
-		regs->cp0_epc = cpc;
-		clear_delay_slot(regs);
-		return 0;
+	/* NOP is easy */
+	if (ir == 0)
+		return -1;
+
+	/* microMIPS instructions */
+	if (get_isa16_mode(regs->cp0_epc)) {
+		union mips_instruction insn = { .word = ir };
+
+		/* NOP16 aka MOVE16 $0, $0 */
+		if ((ir >> 16) == MM_NOP16)
+			return -1;
+
+		/* ADDIUPC */
+		if (insn.mm_a_format.opcode == mm_addiupc_op) {
+			unsigned int rs;
+			s32 v;
+
+			rs = (((insn.mm_a_format.rs + 0xe) & 0xf) + 2);
+			v = regs->cp0_epc & ~3;
+			v += insn.mm_a_format.simmediate << 2;
+			regs->regs[rs] = (long)v;
+			return -1;
+		}
 	}
 
 	pr_debug("dsemul %lx %lx\n", regs->cp0_epc, cpc);
@@ -63,13 +79,8 @@ int mips_dsemul(struct pt_regs *regs, mips_instruction ir, unsigned long cpc,
 	 * Algorithmics used a system call instruction, and
 	 * borrowed that vector.  MIPS/Linux version is a bit
 	 * more heavyweight in the interests of portability and
-	 * multiprocessor support.  For Linux we generate a
-	 * an unaligned access and force an address error exception.
-	 *
-	 * For embedded systems (stand-alone) we prefer to use a
-	 * non-existing CP1 instruction. This prevents us from emulating
-	 * branches, but gives us a cleaner interface to the exception
-	 * handler (single entry point).
+	 * multiprocessor support.  For Linux we use a BREAK 514
+	 * instruction causing a breakpoint exception.
 	 */
 
 	if (current_thread_info()->vdso_page) {
