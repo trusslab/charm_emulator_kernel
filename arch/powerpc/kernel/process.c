@@ -1048,7 +1048,7 @@ void show_regs(struct pt_regs * regs)
 		show_instructions(regs);
 }
 
-void exit_thread(void)
+void exit_thread(struct task_struct *tsk)
 {
 	discard_lazy_cpu_state();
 }
