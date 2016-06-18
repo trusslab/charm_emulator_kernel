@@ -135,6 +135,10 @@ static ssize_t goldfish_audio_read(struct file *fp, char __user *buf,
 		data->buffer_status &= ~AUDIO_INT_READ_BUFFER_FULL;
 		spin_unlock_irqrestore(&data->lock, irq_flags);
 
+		spin_lock_irqsave(&data->lock, irq_flags);
+		data->buffer_status &= ~AUDIO_INT_READ_BUFFER_FULL;
+		spin_unlock_irqrestore(&data->lock, irq_flags);
+
 		length = AUDIO_READ(data, AUDIO_READ_BUFFER_AVAILABLE);
 
 		/* copy data to user space */
