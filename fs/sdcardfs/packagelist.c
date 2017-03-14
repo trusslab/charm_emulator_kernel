@@ -20,6 +20,7 @@
 
 #include "sdcardfs.h"
 #include <linux/hashtable.h>
+#include <linux/ctype.h>
 #include <linux/delay.h>
 #include <linux/radix-tree.h>
 #include <linux/dcache.h>
@@ -44,10 +45,18 @@ static DEFINE_HASHTABLE(ext_to_groupid, 8);
 
 static struct kmem_cache *hashtable_entry_cachep;
 
+static unsigned int full_name_case_hash(const unsigned char *name, unsigned int len)
+{
+	unsigned long hash = init_name_hash();
+	while (len--)
+		hash = partial_name_hash(tolower(*name++), hash);
+	return end_name_hash(hash);
+}
+
 static void inline qstr_init(struct qstr *q, const char *name) {
 	q->name = name;
 	q->len = strlen(q->name);
-	q->hash = full_name_hash(q->name, q->len);
+	q->hash = full_name_case_hash(q->name, q->len);
 }
 
 static inline int qstr_copy(const struct qstr *src, struct qstr *dest) {
@@ -178,6 +187,8 @@ static struct hashtable_entry *alloc_hashtable_entry(const struct qstr *key,
 			GFP_KERNEL);
 	if (!ret)
 		return NULL;
+	INIT_HLIST_NODE(&ret->dlist);
+	INIT_HLIST_NODE(&ret->hlist);
 
 	if (!qstr_copy(key, &ret->key)) {
 		kmem_cache_free(hashtable_entry_cachep, ret);
@@ -249,8 +260,7 @@ static void fixup_all_perms_name(const struct qstr *key)
 	struct sdcardfs_sb_info *sbinfo;
 	struct limit_search limit = {
 		.flags = BY_NAME,
-		.name = key->name,
-		.length = key->len,
+		.name = QSTR_INIT(key->name, key->len),
 	};
 	list_for_each_entry(sbinfo, &sdcardfs_super_list, list) {
 		if (sbinfo_has_sdcard_magic(sbinfo))
@@ -263,8 +273,7 @@ static void fixup_all_perms_name_userid(const struct qstr *key, userid_t userid)
 	struct sdcardfs_sb_info *sbinfo;
 	struct limit_search limit = {
 		.flags = BY_NAME | BY_USERID,
-		.name = key->name,
-		.length = key->len,
+		.name = QSTR_INIT(key->name, key->len),
 		.userid = userid,
 	};
 	list_for_each_entry(sbinfo, &sdcardfs_super_list, list) {
@@ -326,7 +335,6 @@ static int insert_userid_exclude_entry(const struct qstr *key, userid_t value)
 static void free_hashtable_entry(struct hashtable_entry *entry)
 {
 	kfree(entry->key.name);
-	hash_del_rcu(&entry->dlist);
 	kmem_cache_free(hashtable_entry_cachep, entry);
 }
 
