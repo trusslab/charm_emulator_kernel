@@ -15,51 +15,10 @@
  *
  */
 
-/* This source file contains the implementation of a special device driver
- * that intends to provide a *very* fast communication channel between the
- * guest system and the QEMU emulator.
- *
- * Usage from the guest is simply the following (error handling simplified):
- *
- *    int  fd = open("/dev/qemu_pipe",O_RDWR);
- *    .... write() or read() through the pipe.
- *
- * This driver doesn't deal with the exact protocol used during the session.
- * It is intended to be as simple as something like:
- *
- *    // do this _just_ after opening the fd to connect to a specific
- *    // emulator service.
- *    const char*  msg = "<pipename>";
- *    if (write(fd, msg, strlen(msg)+1) < 0) {
- *       ... could not connect to <pipename> service
- *       close(fd);
- *    }
- *
- *    // after this, simply read() and write() to communicate with the
- *    // service. Exact protocol details left as an exercise to the reader.
- *
- * This driver is very fast because it doesn't copy any data through
- * intermediate buffers, since the emulator is capable of translating
- * guest user addresses into host ones.
- *
- * Note that we must however ensure that each user page involved in the
- * exchange is properly mapped during a transfer.
+/* This source file contains the implementation of the legacy version of
+ * a goldfish pipe device driver. See goldfish_pipe.c for the current version.
  */
-
-#include <linux/module.h>
-#include <linux/interrupt.h>
-#include <linux/kernel.h>
-#include <linux/spinlock.h>
-#include <linux/miscdevice.h>
-#include <linux/platform_device.h>
-#include <linux/poll.h>
-#include <linux/sched.h>
-#include <linux/bitops.h>
-#include <linux/slab.h>
-#include <linux/io.h>
-#include <linux/mm.h>
-#include <linux/goldfish.h>
-#include <linux/acpi.h>
+#include "goldfish_pipe.h"
 
 /*
  * IMPORTANT: The following constants must match the ones used and defined
@@ -70,10 +29,14 @@
 #define PIPE_REG_COMMAND		0x00  /* write: value = command */
 #define PIPE_REG_STATUS			0x04  /* read */
 #define PIPE_REG_CHANNEL		0x08  /* read/write: channel id */
+#ifdef CONFIG_64BIT
 #define PIPE_REG_CHANNEL_HIGH	        0x30  /* read/write: channel id */
+#endif
 #define PIPE_REG_SIZE			0x0c  /* read/write: buffer size */
 #define PIPE_REG_ADDRESS		0x10  /* write: physical address */
+#ifdef CONFIG_64BIT
 #define PIPE_REG_ADDRESS_HIGH	        0x34  /* write: physical address */
+#endif
 #define PIPE_REG_WAKES			0x14  /* read: wake flags */
 #define PIPE_REG_PARAMS_ADDR_LOW	0x18  /* read/write: batch data address */
 #define PIPE_REG_PARAMS_ADDR_HIGH	0x1c  /* read/write: batch data address */
@@ -119,6 +82,14 @@
 #define DPRINT(...)
 #endif
 
+/* This data type models a given pipe instance */
+struct goldfish_pipe {
+	struct goldfish_pipe_dev *dev;
+	struct mutex lock;
+	unsigned long flags;
+	wait_queue_head_t wake_queue;
+};
+
 struct access_params {
 	unsigned long channel;
 	u32 size;
@@ -129,29 +100,6 @@ struct access_params {
 	u32 flags;
 };
 
-/* The global driver data. Holds a reference to the i/o page used to
- * communicate with the emulator, and a wake queue for blocked tasks
- * waiting to be awoken.
- */
-struct goldfish_pipe_dev {
-	spinlock_t lock;
-	unsigned char __iomem *base;
-	struct access_params *aps;
-	int irq;
-	u32 version;
-};
-
-static struct goldfish_pipe_dev   pipe_dev[1];
-
-/* This data type models a given pipe instance */
-struct goldfish_pipe {
-	struct goldfish_pipe_dev *dev;
-	struct mutex lock;
-	unsigned long flags;
-	wait_queue_head_t wake_queue;
-};
-
-
 /* Bit flags for the 'flags' field */
 enum {
 	BIT_CLOSED_ON_HOST = 0,  /* pipe closed by host */
@@ -161,14 +109,16 @@ enum {
 
 
 static u32 goldfish_cmd_status(struct goldfish_pipe *pipe, u32 cmd)
-{
+{ 
 	unsigned long flags;
 	u32 status;
 	struct goldfish_pipe_dev *dev = pipe->dev;
 
 	spin_lock_irqsave(&dev->lock, flags);
-	gf_write64((u64)(unsigned long)pipe, dev->base + PIPE_REG_CHANNEL,
-				dev->base + PIPE_REG_CHANNEL_HIGH);
+	writel((u32)(u64)pipe, dev->base + PIPE_REG_CHANNEL);
+#ifdef CONFIG_64BIT
+	writel((u32)((u64)pipe >> 32), dev->base + PIPE_REG_CHANNEL_HIGH);
+#endif
 	writel(cmd, dev->base + PIPE_REG_COMMAND);
 	status = readl(dev->base + PIPE_REG_STATUS);
 	spin_unlock_irqrestore(&dev->lock, flags);
@@ -176,13 +126,15 @@ static u32 goldfish_cmd_status(struct goldfish_pipe *pipe, u32 cmd)
 }
 
 static void goldfish_cmd(struct goldfish_pipe *pipe, u32 cmd)
-{
+{ 
 	unsigned long flags;
 	struct goldfish_pipe_dev *dev = pipe->dev;
 
 	spin_lock_irqsave(&dev->lock, flags);
-	gf_write64((u64)(unsigned long)pipe, dev->base + PIPE_REG_CHANNEL,
-				dev->base + PIPE_REG_CHANNEL_HIGH);
+	writel((u32)(u64)pipe, dev->base + PIPE_REG_CHANNEL);
+#ifdef CONFIG_64BIT
+	writel((u32)((u64)pipe >> 32), dev->base + PIPE_REG_CHANNEL_HIGH);
+#endif
 	writel(cmd, dev->base + PIPE_REG_COMMAND);
 	spin_unlock_irqrestore(&dev->lock, flags);
 }
@@ -281,7 +233,7 @@ static ssize_t goldfish_pipe_read_write(struct file *filp, char __user *buffer,
 	struct goldfish_pipe *pipe = filp->private_data;
 	struct goldfish_pipe_dev *dev = pipe->dev;
 	unsigned long address, address_end;
-	struct page* pages[MAX_PAGES_TO_GRAB] = {};
+	struct page *pages[MAX_PAGES_TO_GRAB] = {};
 	int count = 0, ret = -EINVAL;
 
 	/* If the emulator already closed the pipe, no need to go further */
@@ -289,7 +241,7 @@ static ssize_t goldfish_pipe_read_write(struct file *filp, char __user *buffer,
 		return -EIO;
 
 	/* Null reads or writes succeeds */
-	if (unlikely(bufflen) == 0)
+	if (unlikely(bufflen == 0))
 		return 0;
 
 	/* Check the buffer range for access */
@@ -320,10 +272,10 @@ static ssize_t goldfish_pipe_read_write(struct file *filp, char __user *buffer,
 		if (requested_pages > MAX_PAGES_TO_GRAB) {
 			requested_pages = MAX_PAGES_TO_GRAB;
 		}
-		ret = get_user_pages_fast(first_page, requested_pages,
-				!is_write, pages);
+		ret = get_user_pages_fast(first_page,
+				requested_pages, !is_write, pages);
 
-		DPRINT("%s: requested pages: %d %d\n", __FUNCTION__, ret, requested_pages);
+		DPRINT("%s: requested pages: %d %d %p\n", __FUNCTION__, ret, requested_pages, first_page);
 		if (ret == 0) {
 			DPRINT("%s: error: (requested pages == 0) (wanted %d)\n",
 					__FUNCTION__, requested_pages);
@@ -357,18 +309,20 @@ static ssize_t goldfish_pipe_read_write(struct file *filp, char __user *buffer,
 
 		/* Now, try to transfer the bytes in the current page */
 		spin_lock_irqsave(&dev->lock, irq_flags);
-
 		if (access_with_param(dev,
 					is_write ? CMD_WRITE_BUFFER : CMD_READ_BUFFER,
 					xaddr, avail, pipe, &status)) {
-			gf_write64((u64)(unsigned long)pipe,
-				   dev->base + PIPE_REG_CHANNEL,
-				   dev->base + PIPE_REG_CHANNEL_HIGH);
+			writel((u32)(u64)pipe, dev->base + PIPE_REG_CHANNEL);
+#ifdef CONFIG_64BIT
+			writel((u32)((u64)pipe >> 32), dev->base + PIPE_REG_CHANNEL_HIGH);
+#endif
 			writel(avail, dev->base + PIPE_REG_SIZE);
-			gf_write64(xaddr, dev->base + PIPE_REG_ADDRESS,
-				dev->base + PIPE_REG_ADDRESS_HIGH);
+			writel(xaddr, dev->base + PIPE_REG_ADDRESS);
+#ifdef CONFIG_64BIT
+			writel((u32)((u64)xaddr >> 32), dev->base + PIPE_REG_ADDRESS_HIGH);
+#endif
 			writel(is_write ? CMD_WRITE_BUFFER : CMD_READ_BUFFER,
-				   dev->base + PIPE_REG_COMMAND);
+					dev->base + PIPE_REG_COMMAND);
 			status = readl(dev->base + PIPE_REG_STATUS);
 		}
 		spin_unlock_irqrestore(&dev->lock, irq_flags);
@@ -433,11 +387,13 @@ static ssize_t goldfish_pipe_read_write(struct file *filp, char __user *buffer,
 		while (test_bit(wakeBit, &pipe->flags)) {
 			if (wait_event_interruptible(
 					pipe->wake_queue,
-					!test_bit(wakeBit, &pipe->flags)))
+					!test_bit(wakeBit, &pipe->flags))) {
 				return -ERESTARTSYS;
+			}
 
-			if (test_bit(BIT_CLOSED_ON_HOST, &pipe->flags))
+			if (test_bit(BIT_CLOSED_ON_HOST, &pipe->flags)) {
 				return -EIO;
+			}
 		}
 
 		/* Try to re-acquire the lock */
@@ -532,7 +488,7 @@ static irqreturn_t goldfish_pipe_interrupt(int irq, void *dev_id)
 		/* Did the emulator just closed a pipe? */
 		if (wakes & PIPE_WAKE_CLOSED) {
 			set_bit(BIT_CLOSED_ON_HOST, &pipe->flags);
-			wakes |= PIPE_WAKE_READ | PIPE_WAKE_WRITE;
+            wakes |= PIPE_WAKE_READ | PIPE_WAKE_WRITE;
 		}
 		if (wakes & PIPE_WAKE_READ)
 			clear_bit(BIT_WAKE_ON_READ, &pipe->flags);
@@ -561,7 +517,7 @@ static irqreturn_t goldfish_pipe_interrupt(int irq, void *dev_id)
 static int goldfish_pipe_open(struct inode *inode, struct file *file)
 {
 	struct goldfish_pipe *pipe;
-	struct goldfish_pipe_dev *dev = pipe_dev;
+	struct goldfish_pipe_dev *dev = goldfish_pipe_dev;
 	int32_t status;
 
 	/* Allocate new pipe kernel object */
@@ -612,98 +568,33 @@ static const struct file_operations goldfish_pipe_fops = {
 	.release = goldfish_pipe_release,
 };
 
-static struct miscdevice goldfish_pipe_device = {
+static struct miscdevice goldfish_pipe_miscdev = {
 	.minor = MISC_DYNAMIC_MINOR,
 	.name = "goldfish_pipe",
 	.fops = &goldfish_pipe_fops,
 };
 
-static int goldfish_pipe_probe(struct platform_device *pdev)
+int goldfish_pipe_device_init_v1(struct platform_device *pdev)
 {
-	DPRINT("%s: call. platform_device=0x%lx\n", __FUNCTION__, pdev);
-	int err;
-	struct resource *r;
-	struct goldfish_pipe_dev *dev = pipe_dev;
-
-	/* not thread safe, but this should not happen */
-	WARN_ON(dev->base != NULL);
-
-	spin_lock_init(&dev->lock);
-
-	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-	if (r == NULL || resource_size(r) < PAGE_SIZE) {
-		dev_err(&pdev->dev, "can't allocate i/o page\n");
-		return -EINVAL;
-	}
-	dev->base = devm_ioremap(&pdev->dev, r->start, PAGE_SIZE);
-	if (dev->base == NULL) {
-		dev_err(&pdev->dev, "ioremap failed\n");
-		return -EINVAL;
-	}
-
-	r = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
-	if (r == NULL) {
-		err = -EINVAL;
-		goto error;
-	}
-	dev->irq = r->start;
-
-	err = devm_request_irq(&pdev->dev, dev->irq, goldfish_pipe_interrupt,
+	struct goldfish_pipe_dev *dev = goldfish_pipe_dev;
+	int err = devm_request_irq(&pdev->dev, dev->irq, goldfish_pipe_interrupt,
 				IRQF_SHARED, "goldfish_pipe", dev);
 	if (err) {
-		dev_err(&pdev->dev, "unable to allocate IRQ\n");
-		goto error;
+		dev_err(&pdev->dev, "unable to allocate IRQ for v1\n");
+		return err;
 	}
 
-	err = misc_register(&goldfish_pipe_device);
+	err = misc_register(&goldfish_pipe_miscdev);
 	if (err) {
-		dev_err(&pdev->dev, "unable to register device\n");
-		goto error;
+		dev_err(&pdev->dev, "unable to register v1 device\n");
+		return err;
 	}
+	
 	setup_access_params_addr(pdev, dev);
-
-	/* Although the pipe device in the classic Android emulator does not
-	 * recognize the 'version' register, it won't treat this as an error
-	 * either and will simply return 0, which is fine. */
-	dev->version = readl(dev->base + PIPE_REG_VERSION);
 	return 0;
-
-error:
-	dev->base = NULL;
-	return err;
 }
 
-static int goldfish_pipe_remove(struct platform_device *pdev)
+void goldfish_pipe_device_deinit_v1(struct platform_device *pdev)
 {
-	struct goldfish_pipe_dev *dev = pipe_dev;
-	misc_deregister(&goldfish_pipe_device);
-	dev->base = NULL;
-	return 0;
+    misc_deregister(&goldfish_pipe_miscdev);
 }
-
-static const struct acpi_device_id goldfish_pipe_acpi_match[] = {
-	{ "GFSH0003", 0 },
-	{ },
-};
-MODULE_DEVICE_TABLE(acpi, goldfish_pipe_acpi_match);
-
-static const struct of_device_id goldfish_pipe_of_match[] = {
-	{ .compatible = "generic,android-pipe", },
-	{},
-};
-MODULE_DEVICE_TABLE(of, goldfish_pipe_of_match);
-
-static struct platform_driver goldfish_pipe = {
-	.probe = goldfish_pipe_probe,
-	.remove = goldfish_pipe_remove,
-	.driver = {
-		.name = "goldfish_pipe",
-		.owner = THIS_MODULE,
-		.of_match_table = goldfish_pipe_of_match,
-		.acpi_match_table = ACPI_PTR(goldfish_pipe_acpi_match),
-	}
-};
-
-module_platform_driver(goldfish_pipe);
-MODULE_AUTHOR("David Turner <digit@google.com>");
-MODULE_LICENSE("GPL");
