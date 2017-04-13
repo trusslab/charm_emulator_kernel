@@ -127,6 +127,7 @@ do {									\
 	}								\
 } while(0)
 
+
 #if defined(CONFIG_PHYS_ADDR_T_64BIT) && defined(CONFIG_CPU_MIPS32)
 
 #define pte_none(pte)		(!(((pte).pte_high) & ~_PAGE_GLOBAL))
@@ -589,7 +590,8 @@ static inline struct page *pmd_page(pmd_t pmd)
 
 static inline pmd_t pmd_modify(pmd_t pmd, pgprot_t newprot)
 {
-	pmd_val(pmd) = (pmd_val(pmd) & _PAGE_CHG_MASK) | pgprot_val(newprot);
+	pmd_val(pmd) = (pmd_val(pmd) & (_PAGE_CHG_MASK | _PAGE_HUGE)) |
+		       (pgprot_val(newprot) & ~_PAGE_CHG_MASK);
 	return pmd;
 }
 
