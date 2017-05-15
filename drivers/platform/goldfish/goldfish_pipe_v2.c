@@ -211,6 +211,7 @@ struct goldfish_pipe {
 };
 
 struct goldfish_pipe_dev goldfish_pipe_dev[1] = {};
+EXPORT_SYMBOL(goldfish_pipe_dev);
 
 static int goldfish_pipe_cmd_locked(struct goldfish_pipe *pipe, enum PipeCmdCode cmd)
 {

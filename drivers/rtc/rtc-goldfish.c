@@ -148,7 +148,7 @@ static const struct acpi_device_id goldfish_rtc_acpi_match[] = {
 	{ "GFSH0007", 0 },
 	{ },
 };
-MODULE_DEVICE_TABLE(acpi, golfish_rtc_acpi_match);
+MODULE_DEVICE_TABLE(acpi, goldfish_rtc_acpi_match);
 
 static struct platform_driver goldfish_rtc = {
 	.probe = goldfish_rtc_probe,

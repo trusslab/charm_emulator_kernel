@@ -593,8 +593,10 @@ int goldfish_pipe_device_init_v1(struct platform_device *pdev)
 	setup_access_params_addr(pdev, dev);
 	return 0;
 }
+EXPORT_SYMBOL(goldfish_pipe_device_init_v1);
 
 void goldfish_pipe_device_deinit_v1(struct platform_device *pdev)
 {
     misc_deregister(&goldfish_pipe_miscdev);
 }
+EXPORT_SYMBOL(goldfish_pipe_device_deinit_v1);
