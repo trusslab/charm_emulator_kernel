@@ -945,7 +945,7 @@ static inline unsigned long dmfc1(unsigned reg)
 }
 #else /* !CONFIG_64BIT */
 
-#ifndef CONFIG_CPU_MIPSR1
+#if !defined(CONFIG_CPU_MIPSR1) && !defined(CONFIG_CPU_R4X00)
 static inline void mtc1_mthc1(unsigned long val, unsigned long val2, unsigned reg)
 {
 	switch (reg) {
@@ -1556,7 +1556,7 @@ static void emulate_load_store_insn(struct pt_regs *regs,
 					goto preempt_fault;
 				dmtc1(value, insn.i_format.rt);
 #else /* !CONFIG_64BIT */
-#ifdef CONFIG_CPU_MIPSR1
+#if defined(CONFIG_CPU_MIPSR1) || defined(CONFIG_CPU_R4X00)
 				preempt_enable_no_resched();
 				goto fpu_continue;
 #else
@@ -1604,7 +1604,7 @@ static void emulate_load_store_insn(struct pt_regs *regs,
 				if (res)
 					goto preempt_fault;
 #else /* !CONFIG_64BIT */
-#ifdef CONFIG_CPU_MIPSR1
+#if defined(CONFIG_CPU_MIPSR1) || defined(CONFIG_CPU_R4X00)
 				preempt_enable_no_resched();
 				/* roll back jump/branch */
 				regs->cp0_epc = origpc;
@@ -2163,7 +2163,7 @@ static void emulate_load_store_microMIPS(struct pt_regs *regs,
 					goto preempt_fault;
 				dmtc1(value, insn.mm_i_format.rt);
 #else /* !CONFIG_64BIT */
-#ifdef CONFIG_CPU_MIPSR1
+#if defined(CONFIG_CPU_MIPSR1) || defined(CONFIG_CPU_R4X00)
 				preempt_enable_no_resched();
 				goto fpu_emul;
 #else
@@ -2209,7 +2209,7 @@ static void emulate_load_store_microMIPS(struct pt_regs *regs,
 				if (res)
 					goto preempt_fault;
 #else /* !CONFIG_64BIT */
-#ifdef CONFIG_CPU_MIPSR1
+#if defined(CONFIG_CPU_MIPSR1) || defined(CONFIG_CPU_R4X00)
 				preempt_enable_no_resched();
 				goto fpu_emul;
 #else

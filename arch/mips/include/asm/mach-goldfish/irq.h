@@ -30,4 +30,6 @@
 
 #define NR_IRQS			40
 
+#include_next <irq.h>
+
 #endif
