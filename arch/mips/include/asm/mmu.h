@@ -3,10 +3,7 @@
 
 typedef struct {
 	unsigned long asid[NR_CPUS];
-	unsigned long vdso_asid[NR_CPUS];
-	struct page   *vdso_page[NR_CPUS];
-	void __user *vdso;
-	struct vm_area_struct   *vdso_vma;
+	void *vdso;
 	atomic_t fp_mode_switching;
 } mm_context_t;
 

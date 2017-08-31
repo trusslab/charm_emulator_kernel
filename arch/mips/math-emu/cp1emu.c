@@ -977,8 +977,6 @@ static int cop1Emulate(struct pt_regs *xcp, struct mips_fpu_struct *ctx,
 		struct mm_decoded_insn dec_insn, void *__user *fault_addr)
 {
 	unsigned long contpc = xcp->cp0_epc + dec_insn.pc_inc;
-	unsigned long r31;
-	unsigned long s_epc;
 	unsigned int cond, cbit, bit0;
 	mips_instruction ir;
 	int likely, pc_inc;
@@ -996,8 +994,6 @@ static int cop1Emulate(struct pt_regs *xcp, struct mips_fpu_struct *ctx,
 	if (!cpu_has_mmips && dec_insn.micro_mips_mode)
 		unreachable();
 
-	s_epc = xcp->cp0_epc;
-	r31 = xcp->regs[31];
 	/* XXX NEC Vr54xx bug workaround */
 	if (delay_slot(xcp)) {
 		if (dec_insn.micro_mips_mode) {
@@ -1274,7 +1270,7 @@ branch_common:
 						 * instruction in the dslot.
 						 */
 						sig = mips_dsemul(xcp, ir,
-							    contpc, s_epc, r31);
+								  contpc);
 						if (sig < 0)
 							break;
 						if (sig)
@@ -1329,7 +1325,7 @@ branch_common:
 				 * Single step the non-cp1
 				 * instruction in the dslot
 				 */
-				sig = mips_dsemul(xcp, ir, contpc, s_epc, r31);
+				sig = mips_dsemul(xcp, ir, contpc);
 				if (sig < 0)
 					break;
 				if (sig)

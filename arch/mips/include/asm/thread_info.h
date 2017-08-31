@@ -34,8 +34,6 @@ struct thread_info {
 						 * 0x7fffffff for user-thead
 						 * 0xffffffff for kernel-thread
 						 */
-	unsigned long			vdso_offset;
-	struct page				*vdso_page;
 	struct pt_regs		*regs;
 	long			syscall;	/* syscall number */
 };
@@ -51,7 +49,6 @@ struct thread_info {
 	.cpu		= 0,			\
 	.preempt_count	= INIT_PREEMPT_COUNT,	\
 	.addr_limit	= KERNEL_DS,		\
-	.vdso_page	= NULL,				\
 }
 
 #define init_thread_info	(init_thread_union.thread_info)
