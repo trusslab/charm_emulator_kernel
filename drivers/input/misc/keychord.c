@@ -56,7 +56,6 @@ struct keychord_device {
 	struct input_device_id  device_ids[2];
 
 	spinlock_t		lock;
-	struct mutex		w_mutex;
 	wait_queue_head_t	waitq;
 	unsigned char		head;
 	unsigned char		tail;
@@ -249,7 +248,6 @@ static ssize_t keychord_write(struct file *file, const char __user *buffer,
 		return -EFAULT;
 	}
 
-	mutex_lock(&kdev->w_mutex);
 	/* unregister handler before changing configuration */
 	if (kdev->registered) {
 		input_unregister_handler(&kdev->input_handler);
@@ -301,23 +299,18 @@ static ssize_t keychord_write(struct file *file, const char __user *buffer,
 	spin_unlock_irqrestore(&kdev->lock, flags);
 
 	ret = input_register_handler(&kdev->input_handler);
-
 	if (ret) {
 		kfree(keychords);
 		kdev->keychords = 0;
+		return ret;
 	}
-	else {
-		kdev->registered = 1;
-		ret = count;
-	}
+	kdev->registered = 1;
 
-	mutex_unlock(&kdev->w_mutex);
-	return ret;
+	return count;
 
 err_unlock_return:
 	spin_unlock_irqrestore(&kdev->lock, flags);
 	kfree(keychords);
-	mutex_unlock(&kdev->w_mutex);
 	return -EINVAL;
 }
 
@@ -342,7 +335,6 @@ static int keychord_open(struct inode *inode, struct file *file)
 		return -ENOMEM;
 
 	spin_lock_init(&kdev->lock);
-	mutex_init(&kdev->w_mutex);
 	init_waitqueue_head(&kdev->waitq);
 
 	kdev->input_handler.event = keychord_event;
