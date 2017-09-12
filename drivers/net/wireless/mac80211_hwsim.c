@@ -1339,6 +1339,11 @@ static const char * const hwsim_chanwidths[] = {
 	[NL80211_CHAN_WIDTH_160] = "vht160",
 };
 
+static void mac80211_power_state_change(bool enabled)
+{
+	/* TODO: Do something when the power state changes */
+}
+
 static int mac80211_hwsim_config(struct ieee80211_hw *hw, u32 changed)
 {
 	struct mac80211_hwsim_data *data = hw->priv;
@@ -1349,6 +1354,11 @@ static int mac80211_hwsim_config(struct ieee80211_hw *hw, u32 changed)
 		[IEEE80211_SMPS_STATIC] = "static",
 		[IEEE80211_SMPS_DYNAMIC] = "dynamic",
 	};
+
+	if (changed & IEEE80211_CONF_CHANGE_PS) {
+		bool enabled = conf->flags & IEEE80211_CONF_PS;
+		mac80211_power_state_changed(enabled);
+	}
 
 	if (conf->chandef.chan)
 		wiphy_debug(hw->wiphy,
@@ -2061,6 +2071,7 @@ static int mac80211_hwsim_create_radio(int channels, const char *reg_alpha2,
 		hw->wiphy->interface_modes |= BIT(NL80211_IFTYPE_P2P_DEVICE);
 
 	hw->flags = IEEE80211_HW_MFP_CAPABLE |
+		    IEEE80211_HW_SUPPORTS_PS |
 		    IEEE80211_HW_SIGNAL_DBM |
 		    IEEE80211_HW_AMPDU_AGGREGATION |
 		    IEEE80211_HW_WANT_MONITOR_VIF |
