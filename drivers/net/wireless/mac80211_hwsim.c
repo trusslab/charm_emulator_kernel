@@ -1339,7 +1339,7 @@ static const char * const hwsim_chanwidths[] = {
 	[NL80211_CHAN_WIDTH_160] = "vht160",
 };
 
-static void mac80211_power_state_change(bool enabled)
+static void mac80211_power_state_changed(bool enabled)
 {
 	/* TODO: Do something when the power state changes */
 }
