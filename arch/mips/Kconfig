@@ -323,6 +323,7 @@ config MIPS_RANCHU
 	select CEVT_R4K
 	select CSRC_R4K
 	select DMA_COHERENT
+	select GENERIC_IRQ_CHIP
 	select IRQ_CPU
 	select MIPS_CPU_SCACHE
 	select SYS_HAS_CPU_MIPS32_R1

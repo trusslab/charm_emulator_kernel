@@ -1,164 +1,151 @@
-/* arch/mips/mach-goldfish/goldfish-platform.c
-**
-** Copyright (C) 2007 Google, Inc.
-**
-** This software is licensed under the terms of the GNU General Public
-** License version 2, as published by the Free Software Foundation, and
-** may be copied, distributed, and modified under those terms.
-**
-** This program is distributed in the hope that it will be useful,
-** but WITHOUT ANY WARRANTY; without even the implied warranty of
-** MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-** GNU General Public License for more details.
-**
-*/
+/*
+ * Copyright (C) 2017 Imagination Technologies Ltd.	All rights reserved
+ *	Author: Miodrag Dinic <miodrag.dinic@imgtec.com>
+ *
+ * This file implements interrupt controller driver for MIPS Goldfish PIC.
+ *
+ * This program is free software; you can redistribute	it and/or modify it
+ * under  the terms of	the GNU General	 Public License as published by the
+ * Free Software Foundation;  either version 2 of the  License, or (at your
+ * option) any later version.
+ */
 
-#include <linux/kernel.h>
-#include <linux/init.h>
+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+
 #include <linux/interrupt.h>
 #include <linux/irq.h>
-#include <linux/platform_device.h>
-#include <linux/delay.h>
 #include <linux/irqchip.h>
-#include <linux/of.h>
+#include <linux/irqchip/chained_irq.h>
+#include <linux/irqdomain.h>
 #include <linux/of_address.h>
+#include <linux/of_irq.h>
+#include <linux/slab.h>
 
-#include <mach/hardware.h>
-#include <mach/irq.h>
-#include <asm/io.h>
 #include <asm/irq_cpu.h>
-#include <asm/setup.h>
 
-#define GOLDFISH_PIC_STATUS       0x00 // number of pending interrupts
-#define GOLDFISH_PIC_NUMBER       0x04
-#define GOLDFISH_PIC_DISABLE_ALL  0x08
-#define GOLDFISH_PIC_DISABLE      0x0c
-#define GOLDFISH_PIC_ENABLE       0x10
+#define GFPIC_NR_IRQS			32
 
-static struct irq_domain *goldfish_pic_domain;
-static void __iomem *goldfish_pic_base;
+/* 8..39 Cascaded Goldfish PIC interrupts */
+#define GFPIC_IRQ_BASE			8
 
-void goldfish_mask_irq(struct irq_data *d)
-{
-	writel(d->irq-GOLDFISH_IRQ_BASE,
-	       goldfish_pic_base + GOLDFISH_PIC_DISABLE);
-}
+#define GFPIC_REG_IRQ_PENDING		0x04
+#define GFPIC_REG_IRQ_DISABLE_ALL	0x08
+#define GFPIC_REG_IRQ_DISABLE		0x0c
+#define GFPIC_REG_IRQ_ENABLE		0x10
 
-void goldfish_unmask_irq(struct irq_data *d)
-{
-	writel(d->irq-GOLDFISH_IRQ_BASE,
-	       goldfish_pic_base + GOLDFISH_PIC_ENABLE);
-}
-
-static struct irq_chip goldfish_irq_chip = {
-	.name	= "goldfish",
-	.irq_mask	= goldfish_mask_irq,
-	.irq_mask_ack = goldfish_mask_irq,
-	.irq_unmask = goldfish_unmask_irq,
+struct goldfish_pic_data {
+	void __iomem *base;
+	struct irq_domain *irq_domain;
 };
 
-void goldfish_irq_dispatch(void)
+static void goldfish_pic_cascade(unsigned irq, struct irq_desc *desc)
 {
-	uint32_t irq;
-	/*
-	 * Disable all interrupt sources
-	 */
-	irq = readl(goldfish_pic_base + GOLDFISH_PIC_NUMBER);
-	do_IRQ(GOLDFISH_IRQ_BASE+irq);
-}
+	struct goldfish_pic_data *gfpic = irq_desc_get_handler_data(desc);
+	struct irq_chip *host_chip = irq_desc_get_chip(desc);
+	u32 pending, hwirq, virq;
 
-void goldfish_fiq_dispatch(void)
-{
-	panic("goldfish_fiq_dispatch");
-}
+	pr_debug("Cascaded IRQ %d\n", irq);
 
-asmlinkage void plat_irq_dispatch(void)
-{
-	unsigned int pending = read_c0_cause() & read_c0_status() & ST0_IM;
+	chained_irq_enter(host_chip, desc);
 
-	if (pending & CAUSEF_IP2)
-		goldfish_irq_dispatch();
-	else if (pending & CAUSEF_IP3)
-		goldfish_fiq_dispatch();
-	else if (pending & CAUSEF_IP7)
-		do_IRQ(MIPS_CPU_IRQ_BASE + 7);
-	else
-		spurious_interrupt();
-}
-
-static struct irqaction cascade = {
-	.handler	= no_action,
-	.flags      = IRQF_NO_THREAD,
-	.name		= "cascade",
-};
-
-static void mips_timer_dispatch(void)
-{
-	do_IRQ(MIPS_CPU_IRQ_BASE + MIPS_CPU_IRQ_COMPARE);
-}
-
-static int goldfish_pic_map(struct irq_domain *d, unsigned int irq, irq_hw_number_t hw)
-{
-	struct irq_chip *chip = &goldfish_irq_chip;
-
-	if (hw < GOLDFISH_IRQ_BASE)
-		return 0;
-
-	irq_set_chip_and_handler(hw, chip, handle_level_irq);
-
-	return 0;
-}
-
-static const struct irq_domain_ops irq_domain_ops = {
-	.xlate = irq_domain_xlate_onetwocell,
-	.map = goldfish_pic_map,
-};
-
-int __init goldfish_pic_of_init(struct device_node *node, struct device_node *parent)
-{
-	struct resource res;
-
-	if (of_address_to_resource(node, 0, &res))
-		panic("Failed to get icu memory range");
-
-	if (request_mem_region(res.start, resource_size(&res),
-				res.name) < 0)
-		pr_err("Failed to request icu memory");
-
-	goldfish_pic_base = ioremap_nocache(res.start, resource_size(&res));
-
-	if (!goldfish_pic_base)
-		panic("Failed to remap icu memory");
-
-	/*
-	 * Disable all interrupt sources
-	 */
-	writel(1, goldfish_pic_base + GOLDFISH_PIC_DISABLE_ALL);
-
-	mips_cpu_irq_init();
-
-	if (cpu_has_vint) {
-		pr_info("Setting up vectored interrupts\n");
-		set_vi_handler(MIPS_CPU_IRQ_PIC, goldfish_irq_dispatch);
-		set_vi_handler(MIPS_CPU_IRQ_PIC, goldfish_fiq_dispatch);
+	pending = readl(gfpic->base + GFPIC_REG_IRQ_PENDING);
+	while (pending) {
+		hwirq = __fls(pending);
+		virq = irq_linear_revmap(gfpic->irq_domain, hwirq);
+		generic_handle_irq(virq);
+		pending &= ~(1 << hwirq);
 	}
 
-	setup_irq(MIPS_CPU_IRQ_BASE+MIPS_CPU_IRQ_PIC, &cascade);
-	setup_irq(MIPS_CPU_IRQ_BASE+MIPS_CPU_IRQ_FIQ, &cascade);
-
-	if (cpu_has_vint)
-		set_vi_handler(MIPS_CPU_IRQ_COMPARE, mips_timer_dispatch);
-
-	goldfish_pic_domain = irq_domain_add_linear(node, NR_IRQS, &irq_domain_ops, 0);
-
-	return 0;
+	chained_irq_exit(host_chip, desc);
 }
+
+static const struct irq_domain_ops goldfish_irq_domain_ops = {
+	.xlate = irq_domain_xlate_onecell,
+};
+
+static int __init goldfish_pic_of_init(struct device_node *of_node,
+				       struct device_node *parent)
+{
+	struct goldfish_pic_data *gfpic;
+	struct irq_chip_generic *gc;
+	struct irq_chip_type *ct;
+	unsigned int parent_irq;
+	int ret = 0;
+
+	gfpic = kzalloc(sizeof(*gfpic), GFP_KERNEL);
+	if (!gfpic) {
+		ret = -ENOMEM;
+		goto out_err;
+	}
+
+	parent_irq = irq_of_parse_and_map(of_node, 0);
+	if (!parent_irq) {
+		pr_err("Failed to map parent IRQ!\n");
+		ret = -EINVAL;
+		goto out_free;
+	}
+
+	gfpic->base = of_iomap(of_node, 0);
+	if (!gfpic->base) {
+		pr_err("Failed to map base address!\n");
+		ret = -ENOMEM;
+		goto out_unmap_irq;
+	}
+
+	/* Mask interrupts. */
+	writel(1, gfpic->base + GFPIC_REG_IRQ_DISABLE_ALL);
+
+	gc = irq_alloc_generic_chip("GFPIC", 1, GFPIC_IRQ_BASE, gfpic->base,
+				    handle_level_irq);
+	if (!gc) {
+		pr_err("Failed to allocate chip structures!\n");
+		ret = -ENOMEM;
+		goto out_iounmap;
+	}
+
+	ct = gc->chip_types;
+	ct->regs.enable = GFPIC_REG_IRQ_ENABLE;
+	ct->regs.disable = GFPIC_REG_IRQ_DISABLE;
+	ct->chip.irq_unmask = irq_gc_unmask_enable_reg;
+	ct->chip.irq_mask = irq_gc_mask_disable_reg;
+
+	irq_setup_generic_chip(gc, IRQ_MSK(GFPIC_NR_IRQS), 0,
+			       IRQ_NOPROBE | IRQ_LEVEL, 0);
+
+	gfpic->irq_domain = irq_domain_add_legacy(of_node, GFPIC_NR_IRQS,
+						  GFPIC_IRQ_BASE, 0,
+						  &goldfish_irq_domain_ops,
+						  NULL);
+	if (!gfpic->irq_domain) {
+		pr_err("Failed to add irqdomain!\n");
+		ret = -ENOMEM;
+		goto out_iounmap;
+	}
+
+	irq_set_chained_handler(parent_irq, goldfish_pic_cascade);
+	irq_set_handler_data(parent_irq, gfpic);
+
+	pr_info("Successfully registered.\n");
+	return 0;
+
+out_iounmap:
+	iounmap(gfpic->base);
+out_unmap_irq:
+	irq_dispose_mapping(parent_irq);
+out_free:
+	kfree(gfpic);
+out_err:
+	pr_err("Failed to initialize! (errno = %d)\n", ret);
+	return ret;
+}
+
+static struct of_device_id __initdata irqchip_of_match_goldfish_pic[] = {
+	{ .compatible = "mti,cpu-interrupt-controller", .data = mips_cpu_irq_of_init },
+	{ .compatible = "generic,goldfish-pic", .data = goldfish_pic_of_init },
+	{},
+};
 
 void __init arch_init_irq(void)
 {
-	irqchip_init();
+	of_irq_init(irqchip_of_match_goldfish_pic);
 }
-
-static const struct of_device_id irqchip_of_match_goldfish_pic
-__used __section(__irqchip_of_table)
-= { .compatible = "generic,goldfish-pic", .data = goldfish_pic_of_init };
