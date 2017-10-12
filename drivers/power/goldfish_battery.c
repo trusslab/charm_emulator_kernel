@@ -81,10 +81,10 @@ static int goldfish_ac_get_property(struct power_supply *psy,
 		break;
 
 	case POWER_SUPPLY_PROP_VOLTAGE_MAX:
-		val->intval = GOLDFISH_BATTERY_READ(data, BATTERY_VOLTAGE_MAX);
+		val->intval = 5000000; //5 volt
 		break;
 	case POWER_SUPPLY_PROP_CURRENT_MAX:
-		val->intval = GOLDFISH_BATTERY_READ(data, BATTERY_CURRENT_MAX);
+		val->intval = 5000000;  // 5 amp
 		break;
 	default:
 		ret = -EINVAL;
@@ -118,13 +118,13 @@ static int goldfish_battery_get_property(struct power_supply *psy,
 		val->intval = GOLDFISH_BATTERY_READ(data, BATTERY_CAPACITY);
 		break;
 	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
-		val->intval = GOLDFISH_BATTERY_READ(data, BATTERY_VOLTAGE);
+		val->intval = 5000000;  // 5 volt
 		break;
 	case POWER_SUPPLY_PROP_TEMP:
-		val->intval = GOLDFISH_BATTERY_READ(data, BATTERY_TEMP);
+		val->intval = 250;         // 25 celsuis
 		break;
 	case POWER_SUPPLY_PROP_CHARGE_COUNTER:
-		val->intval = GOLDFISH_BATTERY_READ(data, BATTERY_CHARGE_COUNTER);
+		val->intval = 10;
 		break;
 	default:
 		ret = -EINVAL;
