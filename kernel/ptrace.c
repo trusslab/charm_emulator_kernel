@@ -230,7 +230,10 @@ static int __ptrace_may_access(struct task_struct *task, unsigned int mode)
 	kgid_t caller_gid;
 
 	if (!(mode & PTRACE_MODE_FSCREDS) == !(mode & PTRACE_MODE_REALCREDS)) {
-		WARN(1, "denying ptrace access check without PTRACE_MODE_*CREDS\n");
+		// Do not print the warning here as it will spam when doing "adb bugreport"
+		// with a userdebug Android system image.
+		// BUG: 69808686
+		//WARN(1, "denying ptrace access check without PTRACE_MODE_*CREDS\n");
 		return -EPERM;
 	}
 
