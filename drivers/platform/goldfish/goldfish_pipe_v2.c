@@ -1132,6 +1132,7 @@ static int goldfish_pipe_probe(struct platform_device *pdev)
 
 	spin_lock_init(&dev->lock);
 
+	pdev_dev->coherent_dma_mask = DMA_BIT_MASK(48);
 	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	if (r == NULL || resource_size(r) < PAGE_SIZE) {
 		dev_err(pdev_dev, "can't allocate i/o page\n");
