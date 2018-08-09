@@ -16,7 +16,9 @@
 struct cma;
 
 extern unsigned long totalcma_pages;
-extern phys_addr_t cma_get_base(const struct cma *cma);
+//Charm start
+////extern phys_addr_t cma_get_base(const struct cma *cma);
+//Charm end
 extern unsigned long cma_get_size(const struct cma *cma);
 
 extern int __init cma_declare_contiguous(phys_addr_t base,

@@ -46,7 +46,12 @@ void calibrate_delay(void);
 void msleep(unsigned int msecs);
 unsigned long msleep_interruptible(unsigned int msecs);
 void usleep_range(unsigned long min, unsigned long max);
-
+//Charm start
+static inline void usleep(unsigned long usecs)
+{
+        usleep_range(usecs, usecs);
+}
+//Charm end
 static inline void ssleep(unsigned int seconds)
 {
 	msleep(seconds * 1000);

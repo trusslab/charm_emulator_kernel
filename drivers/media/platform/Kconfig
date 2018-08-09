@@ -275,3 +275,7 @@ config VIDEO_MEM2MEM_TESTDEV
 	  This is a virtual test device for the memory-to-memory driver
 	  framework.
 endif #V4L_TEST_DRIVERS
+
+#Charm start
+source "drivers/media/platform/msm/Kconfig"
+#Charm end

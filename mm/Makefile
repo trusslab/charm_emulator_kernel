@@ -31,16 +31,24 @@ mmu-$(CONFIG_MMU)	:= fremap.o gup.o highmem.o memory.o mincore.o \
 ifdef CONFIG_CROSS_MEMORY_ATTACH
 mmu-$(CONFIG_MMU)	+= process_vm_access.o
 endif
-
+#Charm start
+####obj-y			:= filemap.o mempool.o oom_kill.o \
+####			   maccess.o page_alloc.o page-writeback.o \
+####			   readahead.o swap.o truncate.o vmscan.o shmem.o \
+####			   util.o mmzone.o vmstat.o backing-dev.o \
+####			   mm_init.o mmu_context.o percpu.o slab_common.o \
+####			   compaction.o vmacache.o \
+####			   interval_tree.o list_lru.o workingset.o \
+####			   iov_iter.o debug.o $(mmu-y)
 obj-y			:= filemap.o mempool.o oom_kill.o \
 			   maccess.o page_alloc.o page-writeback.o \
-			   readahead.o swap.o truncate.o vmscan.o shmem.o \
+			   readahead.o swap.o truncate.o vmscan.o shmem.o showmem.o\
 			   util.o mmzone.o vmstat.o backing-dev.o \
 			   mm_init.o mmu_context.o percpu.o slab_common.o \
 			   compaction.o vmacache.o \
 			   interval_tree.o list_lru.o workingset.o \
 			   iov_iter.o debug.o $(mmu-y)
-
+#Charm end
 obj-y += init-mm.o
 
 ifdef CONFIG_NO_BOOTMEM

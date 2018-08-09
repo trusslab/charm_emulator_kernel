@@ -124,6 +124,12 @@ struct ion_heap_ops {
 	int (*map_user)(struct ion_heap *mapper, struct ion_buffer *buffer,
 			struct vm_area_struct *vma);
 	int (*shrink)(struct ion_heap *heap, gfp_t gfp_mask, int nr_to_scan);
+//Charm start
+
+	int (*print_debug)(struct ion_heap *heap, struct seq_file *s,
+			   const struct list_head *mem_map);
+	void (*unmap_user) (struct ion_heap *mapper, struct ion_buffer *buffer);
+//Charm end	
 };
 
 /**
@@ -183,6 +189,11 @@ struct ion_heap {
 	struct task_struct *task;
 
 	int (*debug_show)(struct ion_heap *heap, struct seq_file *, void *);
+//Charm start	
+	void * priv;
+	atomic_t total_allocated;
+	atomic_t total_handles;
+//Charm end	
 };
 
 /**
@@ -225,6 +236,14 @@ void ion_device_destroy(struct ion_device *dev);
  * @heap:		the heap to add
  */
 void ion_device_add_heap(struct ion_device *dev, struct ion_heap *heap);
+
+//Charm start
+struct pages_mem {
+	struct pages ** pages;
+	u32 size;
+	void(*free_fn) ( const void *);
+};
+//Charm end
 
 /**
  * some helpers for common operations on buffers using the sg_table
@@ -435,5 +454,11 @@ int ion_page_pool_shrink(struct ion_page_pool *pool, gfp_t gfp_mask,
  */
 void ion_pages_sync_for_device(struct device *dev, struct page *page,
 		size_t size, enum dma_data_direction dir);
+//Charm start
+int ion_walk_heaps(struct ion_client *client, int heap_id, void *data,
+			int (*f)(struct ion_heap *heap, void *data));
 
+struct ion_handle *ion_handle_get_by_id(struct ion_client *client,
+					int id);
+//Charm end
 #endif /* _ION_PRIV_H */

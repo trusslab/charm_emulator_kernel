@@ -115,6 +115,12 @@ extern unsigned long gen_pool_first_fit_order_align(unsigned long *map,
 		unsigned long size, unsigned long start, unsigned int nr,
 		void *data);
 
+//Charm start
+u64 __must_check
+gen_pool_alloc_aligned(struct gen_pool *pool, size_t size,
+                       unsigned alignment_order);
+//Charm end
+
 extern unsigned long gen_pool_best_fit(unsigned long *map, unsigned long size,
 		unsigned long start, unsigned int nr, void *data);
 

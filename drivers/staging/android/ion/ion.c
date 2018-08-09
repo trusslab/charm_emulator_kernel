@@ -41,6 +41,10 @@
 #include "ion_priv.h"
 #include "compat_ion.h"
 
+//Charm start
+#define ION_HEAP(bit) (1<< (bit))
+//Charm end
+
 /**
  * struct ion_device - the metadata of the ion device node
  * @dev:		the actual misc device
@@ -872,7 +876,51 @@ void ion_client_destroy(struct ion_client *client)
 	kfree(client);
 }
 EXPORT_SYMBOL(ion_client_destroy);
+//Charm start
+int ion_handle_get_flags(struct ion_client *client, struct ion_handle *handle,
+			unsigned long *flags)
+{
+	struct ion_buffer *buffer;
 
+	mutex_lock(&client->lock);
+	if (!ion_handle_validate(client, handle)) {
+		pr_err("%s: invalid handle passed to %s.\n",
+		       __func__, __func__);
+		mutex_unlock(&client->lock);
+		return -EINVAL;
+	}
+	buffer = handle->buffer;
+	mutex_lock(&buffer->lock);
+	*flags = buffer->flags;
+	mutex_unlock(&buffer->lock);
+	mutex_unlock(&client->lock);
+
+	return 0;
+}
+EXPORT_SYMBOL(ion_handle_get_flags);
+
+int ion_handle_get_size(struct ion_client *client, struct ion_handle *handle,
+			unsigned long *size)
+{
+	struct ion_buffer *buffer;
+
+	mutex_lock(&client->lock);
+	if (!ion_handle_validate(client, handle)) {
+		pr_err("%s: invalid handle passed to %s.\n",
+		       __func__, __func__);
+		mutex_unlock(&client->lock);
+		return -EINVAL;
+	}
+	buffer = handle->buffer;
+	mutex_lock(&buffer->lock);
+	*size = buffer->size;
+	mutex_unlock(&buffer->lock);
+	mutex_unlock(&client->lock);
+
+	return 0;
+}
+EXPORT_SYMBOL(ion_handle_get_size);
+//Charm end
 struct sg_table *ion_sg_table(struct ion_client *client,
 			      struct ion_handle *handle)
 {
@@ -1664,3 +1712,50 @@ void __init ion_reserve(struct ion_platform_data *data)
 			data->heaps[i].size);
 	}
 }
+//Charm start
+void show_ion_usage(struct ion_device *dev)
+{
+	struct ion_heap *heap;
+
+	if (!down_read_trylock(&dev->lock)) {
+		pr_err("Ion output would deadlock, can't print debug information\n");
+		return;
+	}
+
+	pr_info("%16.s %16.s %16.s\n", "Heap name", "Total heap size",
+					"Total orphaned size");
+	pr_info("---------------------------------\n");
+	plist_for_each_entry(heap, &dev->heaps, node) {
+		pr_info("%16.s 0x%16.x 0x%16.x\n",
+			heap->name, atomic_read(&heap->total_allocated),
+			atomic_read(&heap->total_allocated) -
+			atomic_read(&heap->total_handles));
+		if (heap->debug_show)
+			heap->debug_show(heap, NULL, 0);
+
+	}
+	up_read(&dev->lock);
+}
+
+int ion_walk_heaps(struct ion_client *client, int heap_id, void *data,
+			int (*f)(struct ion_heap *heap, void *data))
+{
+	int ret_val = -EINVAL;
+	struct ion_heap *heap;
+	struct ion_device *dev = client->dev;
+	/*
+	 * traverse the list of heaps available in this system
+	 * and find the heap that is specified.
+	 */
+	down_write(&dev->lock);
+	plist_for_each_entry(heap, &dev->heaps, node) {
+		if (ION_HEAP(heap->id) != heap_id)
+			continue;
+		ret_val = f(heap, data);
+		break;
+	}
+	up_write(&dev->lock);
+	return ret_val;
+}
+EXPORT_SYMBOL(ion_walk_heaps);
+//Charm end

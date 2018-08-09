@@ -56,6 +56,10 @@ struct ion_platform_heap {
 	size_t size;
 	ion_phys_addr_t align;
 	void *priv;
+//Charm start	
+	unsigned int has_outer_cache;
+	void * extra_data;
+//Charm end	
 };
 
 /**
@@ -68,6 +72,10 @@ struct ion_platform_heap {
 struct ion_platform_data {
 	int nr;
 	struct ion_platform_heap *heaps;
+//Charm start
+
+	unsigned int has_outer_cache;
+//Charm end
 };
 
 /**

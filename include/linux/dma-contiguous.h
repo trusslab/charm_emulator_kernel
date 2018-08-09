@@ -161,4 +161,10 @@ bool dma_release_from_contiguous(struct device *dev, struct page *pages,
 
 #endif
 
+//Charm start
+static inline phys_addr_t cma_get_base(struct device *dev)
+{
+	return 0;
+}
+//Charm end
 #endif

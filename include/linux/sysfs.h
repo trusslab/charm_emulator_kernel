@@ -69,14 +69,14 @@ struct attribute_group {
  * Use these macros to make defining attributes easier. See include/linux/device.h
  * for examples..
  */
-
+//Charm start
 #define __ATTR(_name, _mode, _show, _store) {				\
 	.attr = {.name = __stringify(_name),				\
-		 .mode = VERIFY_OCTAL_PERMISSIONS(_mode) },		\
+		 .mode = _mode },		\
 	.show	= _show,						\
 	.store	= _store,						\
 }
-
+//charm end
 #define __ATTR_RO(_name) {						\
 	.attr	= { .name = __stringify(_name), .mode = S_IRUGO },	\
 	.show	= _name##_show,						\

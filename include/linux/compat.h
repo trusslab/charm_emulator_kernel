@@ -155,6 +155,11 @@ extern int compat_put_timespec(const struct timespec *, void __user *);
 extern int compat_get_timeval(struct timeval *, const void __user *);
 extern int compat_put_timeval(const struct timeval *, void __user *);
 
+//Charm start
+#define put_compat_timespec(a,b) compat_put_timespec(a,b)
+#define get_compat_timespec(a,b) compat_get_timespec(a,b)
+//Charm end
+//
 /*
  * This function convert a timespec if necessary and returns a *user
  * space* pointer.  If no conversion is necessary, it returns the

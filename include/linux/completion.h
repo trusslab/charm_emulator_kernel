@@ -106,4 +106,7 @@ extern bool completion_done(struct completion *x);
 extern void complete(struct completion *);
 extern void complete_all(struct completion *);
 
+//Charm start
+#define INIT_COMPLETION(x)	((x).done = 0)
+//Charm end
 #endif

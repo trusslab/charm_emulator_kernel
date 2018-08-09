@@ -356,7 +356,10 @@ struct class {
 	struct class_attribute		*class_attrs;
 	const struct attribute_group	**dev_groups;
 	struct kobject			*dev_kobj;
-
+//Charm start
+	struct device_attribute		*dev_attrs;
+	struct bin_attribute		*dev_bin_attrs;
+//Charm end
 	int (*dev_uevent)(struct device *dev, struct kobj_uevent_env *env);
 	char *(*devnode)(struct device *dev, umode_t *mode);
 

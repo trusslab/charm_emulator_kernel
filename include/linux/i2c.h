@@ -221,6 +221,9 @@ struct i2c_client {
 					/* _LOWER_ 7 bits		*/
 	char name[I2C_NAME_SIZE];
 	struct i2c_adapter *adapter;	/* the adapter we sit on	*/
+//Charm start
+	struct i2c_driver *driver;
+//Charm end	
 	struct device dev;		/* the device structure		*/
 	int irq;			/* irq issued by device		*/
 	struct list_head detected;

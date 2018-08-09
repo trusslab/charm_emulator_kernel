@@ -17,6 +17,9 @@
 
 #ifndef _LINUX_COMPAT_ION_H
 #define _LINUX_COMPAT_ION_H
+//Charm start
+#define CONFIG_COMPAT 1
+//Charm end
 
 #if IS_ENABLED(CONFIG_COMPAT)
 
