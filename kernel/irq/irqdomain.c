@@ -197,20 +197,26 @@ struct irq_domain *irq_find_host(struct device_node *node)
 	 * the absence of a device node. This isn't a problem so far
 	 * yet though...
 	 */
-	mutex_lock(&irq_domain_mutex);
-	list_for_each_entry(h, &irq_domain_list, link) {
-		if (h->ops->match)
-			rc = h->ops->match(h, node);
-		else
-			rc = (h->of_node != NULL) && (h->of_node == node);
+//Charm start
+	if( (strcmp(node->name,"msm_gpio")) && (strcmp(node->name,"interrupt-controller")) ) {
+		mutex_lock(&irq_domain_mutex);
+		list_for_each_entry(h, &irq_domain_list, link) {
+			if (h->ops->match)
+				rc = h->ops->match(h, node);
+			else
+				rc = (h->of_node != NULL) && (h->of_node == node);
 
-		if (rc) {
-			found = h;
-			break;
+			if (rc) {
+				found = h;
+				break;
+			}
 		}
+		mutex_unlock(&irq_domain_mutex);
+		return found;
+	}else{
+		return irq_default_domain;	
 	}
-	mutex_unlock(&irq_domain_mutex);
-	return found;
+//Charm end	
 }
 EXPORT_SYMBOL_GPL(irq_find_host);
 
@@ -432,7 +438,56 @@ unsigned int irq_create_mapping(struct irq_domain *domain,
 	return virq;
 }
 EXPORT_SYMBOL_GPL(irq_create_mapping);
+//Charm start
+unsigned int irq_create_mapping_charm(struct irq_domain *domain,
+				irq_hw_number_t hwirq)
+{
+	unsigned int hint;
+	int virq;
+	pr_debug("irq_create_mapping(0x%p, 0x%lx)\n", domain, hwirq);
 
+	/* Look for default domain if nececssary */
+	if (domain == NULL)
+		domain = irq_default_domain;
+	if (domain == NULL) {
+		WARN(1, "%s(, %lx) called with NULL domain\n", __func__, hwirq);
+		return 0;
+	}
+	pr_debug("-> using domain @%p\n", domain);
+
+	/* Check if mapping already exists */
+	virq = irq_find_mapping(domain, hwirq);
+	if (virq) {
+		pr_debug("-> existing mapping on virq %d\n", virq);
+		return virq;
+	}
+
+	/* Allocate a virtual interrupt number */
+	hint = hwirq % nr_irqs;
+	if (hint == 0)
+		hint++;
+//Charm specific start
+	virq = irq_alloc_desc_at(hint, of_node_to_nid(domain->of_node));
+//Charm specific end
+	if (virq <= 0)
+		virq = irq_alloc_desc_from(1, of_node_to_nid(domain->of_node));
+	if (virq <= 0) {
+		pr_debug("-> virq allocation failed\n");
+		return 0;
+	}
+
+	if (irq_domain_associate(domain, virq, hwirq)) {
+		irq_free_desc(virq);
+		return 0;
+	}
+
+	pr_debug("irq %lu on domain %s mapped to virtual irq %u\n",
+		hwirq, of_node_full_name(domain->of_node), virq);
+	return virq;
+}
+EXPORT_SYMBOL_GPL(irq_create_mapping_charm);
+//Charm end
+//
 /**
  * irq_create_strict_mappings() - Map a range of hw irqs to fixed linux irqs
  * @domain: domain owning the interrupt range
@@ -465,40 +520,108 @@ int irq_create_strict_mappings(struct irq_domain *domain, unsigned int irq_base,
 	return 0;
 }
 EXPORT_SYMBOL_GPL(irq_create_strict_mappings);
+//Charm start
+static int charm_arm_gic_irq_domain_xlate(struct irq_domain *d,
+                                struct device_node *controller,
+                                const u32 *intspec, unsigned int intsize,
+                                unsigned long *out_hwirq, unsigned int *out_type)
+{
 
+	if(strcmp(of_node_full_name(controller),"/soc/pinctrl@fd510000/gp/msm_gpio")){
+		if (intsize < 3)
+			return -EINVAL;
+
+		switch(intspec[0]) {
+		case 0:                 /* SPI */
+			*out_hwirq = intspec[1] + 32;
+		     //   *out_hwirq = ioapic_irq ;
+			break;
+		case 1:                 /* PPI */
+			*out_hwirq = intspec[1] + 16;
+			break;
+		default:
+			return -EINVAL;
+		}
+		switch(*out_hwirq){
+		case 336:
+			*out_hwirq = 127;
+			break;
+		case 222:
+			*out_hwirq = 126;
+			break;
+		case 195:
+			*out_hwirq = 125;
+			break;
+		case 196:
+			*out_hwirq = 124;
+		default:
+			break;
+
+		}
+
+		*out_type = intspec[2] & IRQ_TYPE_SENSE_MASK;
+        return 0;
+	}else{
+		* out_hwirq = intspec[0];
+		* out_type = intspec[1] & IRQ_TYPE_SENSE_MASK;
+	}
+}
+//Charm end
 unsigned int irq_create_of_mapping(struct of_phandle_args *irq_data)
 {
 	struct irq_domain *domain;
 	irq_hw_number_t hwirq;
 	unsigned int type = IRQ_TYPE_NONE;
 	unsigned int virq;
+//Charm start
+	if     (   strcmp(of_node_full_name(irq_data->np),"/soc/interrupt-controller@f9000000")
+		&& strcmp(of_node_full_name(irq_data->np),"/soc/wcd9xxx-irq")	
+		&& strcmp(of_node_full_name(irq_data->np),"/soc/pinctrl@fd510000/gp/msm_gpio")	){
 
-	domain = irq_data->np ? irq_find_host(irq_data->np) : irq_default_domain;
-	if (!domain) {
-		pr_warn("no irq domain found for %s !\n",
-			of_node_full_name(irq_data->np));
-		return 0;
-	}
-
-	/* If domain has no translation, then we assume interrupt line */
-	if (domain->ops->xlate == NULL)
-		hwirq = irq_data->args[0];
-	else {
-		if (domain->ops->xlate(domain, irq_data->np, irq_data->args,
-					irq_data->args_count, &hwirq, &type))
+		domain = irq_data->np ? irq_find_host(irq_data->np) : irq_default_domain;
+		if (!domain) {
+			pr_warn("no irq domain found for %s !\n",
+				of_node_full_name(irq_data->np));
 			return 0;
-	}
-
-	/* Create mapping */
-	virq = irq_create_mapping(domain, hwirq);
-	if (!virq)
+		}
+		/* If domain has no translation, then we assume interrupt line */
+		if (domain->ops->xlate == NULL){
+			hwirq = irq_data->args[0];
+		}else {
+			if (domain->ops->xlate(domain, irq_data->np, irq_data->args,
+						irq_data->args_count, &hwirq, &type)){
+				return 0;
+			}
+		}
+		virq = irq_create_mapping(domain, hwirq);
+		if (!virq)
+			return virq;
+		/* Set type if specified and different than the current one */
+		if (type != IRQ_TYPE_NONE &&
+		    type != irq_get_trigger_type(virq))
+			irq_set_irq_type(virq, type);
 		return virq;
-
-	/* Set type if specified and different than the current one */
-	if (type != IRQ_TYPE_NONE &&
-	    type != irq_get_trigger_type(virq))
-		irq_set_irq_type(virq, type);
-	return virq;
+	} else {
+		domain = irq_default_domain;
+		if (!domain) {
+			pr_warn("no irq domain found for %s !\n",
+				of_node_full_name(irq_data->np));
+			return 0;
+		}
+		if (charm_arm_gic_irq_domain_xlate(domain, irq_data->np, irq_data->args,
+					irq_data->args_count, &hwirq, &type)){
+			return 0;
+		}
+		virq = irq_create_mapping_charm(domain, hwirq);
+		if (!virq)
+			return virq;
+		/* Set type if specified and different than the current one */
+		if (type != IRQ_TYPE_NONE &&
+		    type != irq_get_trigger_type(virq))
+			irq_set_irq_type(virq, type);
+		return virq;
+	}
+//Charm end
 }
 EXPORT_SYMBOL_GPL(irq_create_of_mapping);
 

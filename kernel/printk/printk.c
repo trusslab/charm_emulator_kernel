@@ -1024,7 +1024,9 @@ static size_t print_prefix(const struct printk_log *msg, bool syslog, char *buf)
 {
 	size_t len = 0;
 	unsigned int prefix = (msg->facility << 3) | msg->level;
-
+//Charm start: syzkaller cannot parse the messages with prefix
+	return 0;
+//Charm end
 	if (syslog) {
 		if (buf) {
 			len += sprintf(buf, "<%u>", prefix);

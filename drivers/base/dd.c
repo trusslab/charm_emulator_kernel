@@ -28,6 +28,9 @@
 
 #include "base.h"
 #include "power/power.h"
+//Charm start
+#include <linux/of.h>
+//Charm end
 
 /*
  * Deferred Probe infrastructure.
@@ -375,6 +378,11 @@ void wait_for_device_probe(void)
 }
 EXPORT_SYMBOL_GPL(wait_for_device_probe);
 
+//Charm start
+extern int pm_runtime_barrier__remote(struct device *dev);
+extern int pm_request_idle__remote(struct device *dev);
+//Charm end
+
 /**
  * driver_probe_device - attempt to bind device & driver together
  * @drv: driver to bind a device to
@@ -389,17 +397,77 @@ EXPORT_SYMBOL_GPL(wait_for_device_probe);
 int driver_probe_device(struct device_driver *drv, struct device *dev)
 {
 	int ret = 0;
+//Charm start
+////	if (!device_is_registered(dev))
+////		return -ENODEV;
+////
+////	pr_debug("bus: '%s': %s: matched device %s with driver %s\n",
+////		 drv->bus->name, __func__, dev_name(dev), drv->name);
+////
+////	pm_runtime_barrier(dev);
+////	ret = really_probe(dev, drv);
+////	pm_request_idle(dev);
+
+        char * compatible;
+        int len_compatible;
+        int rpc_do_flag=0;
+ 
+	compatible=of_get_property(dev->of_node,"compatible",&len_compatible);
+	if(compatible){
+		  if(
+		  strcmp(compatible,"qcom,camera-flash")&&
+		  strcmp(compatible,"st,stmvl6180"     )&&
+		  strcmp(compatible,"qcom,gdsc"        )&&
+		  strcmp(compatible,"qcom,mmsscc-8992" )&&
+		  strcmp(compatible,"qcom,msm-cam"     )&&
+		  strcmp(compatible,"qcom,csiphy-v3.1.1")&&
+		  strcmp(compatible,"qcom,csiphy"      )&&
+		  strcmp(compatible,"qcom,csid"        )&&
+		  strcmp(compatible,"qcom,ispif-v3.0"  )&&
+		  strcmp(compatible,"qcom,ispif"       )&&
+		  strcmp(compatible,"qcom,vfe44"       )&&
+		  strcmp(compatible,"qcom,vfe44"       )&&
+		  strcmp(compatible,"qcom,jpeg"        )&&
+		  strcmp(compatible,"qcom,jpeg_dma"    )&&
+		  strcmp(compatible,"qcom,irqrouter"   )&&
+		  strcmp(compatible,"qcom,cpp"         )&&
+		  strcmp(compatible,"qcom,cci"    )&&
+		  strcmp(compatible,"qcom,actuator"    )&&
+		  strcmp(compatible,"qcom,csid-v3.1"    )&&
+		  strcmp(compatible,"qcom,eeprom")&&
+		  strcmp(compatible,"qcom,camera")
+		  )
+		  {
+			  rpc_do_flag=0;
+		  }
+		  else
+		  {
+			  rpc_do_flag=1;
+		  }
+	}
+	                 
 
 	if (!device_is_registered(dev))
+	{
 		return -ENODEV;
+	}
 
 	pr_debug("bus: '%s': %s: matched device %s with driver %s\n",
 		 drv->bus->name, __func__, dev_name(dev), drv->name);
 
-	pm_runtime_barrier(dev);
+	if(rpc_do_flag){
+		pm_runtime_barrier__remote(dev);
+	}else{
+		pm_runtime_barrier(dev);
+	}
 	ret = really_probe(dev, drv);
-	pm_request_idle(dev);
+	if(rpc_do_flag){
+		pm_request_idle__remote(dev);
+	}else{
+		pm_request_idle(dev);
+	}
 
+//Charm end	
 	return ret;
 }
 

@@ -182,7 +182,10 @@ void panic(const char *fmt, ...)
 		 * shutting down.  But if there is a chance of
 		 * rebooting the system it will be rebooted.
 		 */
-		emergency_restart();
+//Charm start: Do not reboot the machine on the crashes
+////		emergency_restart();
+                machine_shutdown();
+//Charm end		
 	}
 #ifdef __sparc__
 	{

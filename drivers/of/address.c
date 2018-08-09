@@ -70,9 +70,10 @@ static u64 of_bus_default_map(__be32 *addr, const __be32 *range,
 	pr_debug("OF: default map, cp=%llx, s=%llx, da=%llx\n",
 		 (unsigned long long)cp, (unsigned long long)s,
 		 (unsigned long long)da);
-
-	if (da < cp || da >= (cp + s))
-		return OF_BAD_ADDR;
+//Charm start
+////	if (da < cp || da >= (cp + s))
+////		return OF_BAD_ADDR;
+//Charm end	
 	return da - cp;
 }
 

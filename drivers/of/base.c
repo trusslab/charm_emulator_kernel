@@ -29,6 +29,9 @@
 #include <linux/proc_fs.h>
 
 #include "of_private.h"
+//Charm start
+#include <linux/of_platform.h>
+//Charm end
 
 LIST_HEAD(aliases_lookup);
 
@@ -197,6 +200,8 @@ int __of_attach_node_sysfs(struct device_node *np)
 static int __init of_init(void)
 {
 	struct device_node *np;
+	//Charm 
+	int ret;
 
 	/* Create the kset, and register existing nodes */
 	mutex_lock(&of_mutex);
@@ -212,7 +217,12 @@ static int __init of_init(void)
 	/* Symlink in /proc as required by userspace ABI */
 	if (of_allnodes)
 		proc_symlink("device-tree", NULL, "/sys/firmware/devicetree/base");
+//Charm start
+	ret= of_platform_populate(NULL, of_default_bus_match_table,NULL, NULL);
+	if(ret<0)
+        	printk(KERN_ALERT"of_platform_populate rerurn %d",ret);
 
+//Charm end
 	return 0;
 }
 core_initcall(of_init);

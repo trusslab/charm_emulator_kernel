@@ -98,10 +98,16 @@ EXPORT_EARLY_PER_CPU_SYMBOL(x86_bios_cpu_apicid);
  * actually diverge.  Let's keep it ugly for now.
  */
 DEFINE_EARLY_PER_CPU_READ_MOSTLY(int, x86_cpu_to_logical_apicid, BAD_APICID);
-
+//Charm Start
+#endif
+//Charm end
+//
 /* Local APIC was disabled by the BIOS and enabled by the kernel */
 static int enabled_via_apicbase;
 
+//Charm start
+#ifdef CONFIG_X86_32
+//Charm end
 /*
  * Handle interrupt mode configuration register (IMCR).
  * This register controls whether the interrupt signals
@@ -1686,7 +1692,10 @@ static int __init detect_init_APIC(void)
 	mp_lapic_addr = APIC_DEFAULT_PHYS_BASE;
 	return 0;
 }
-#else
+//Charm start
+////#else
+#endif
+//Charm end
 
 static int __init apic_verify(void)
 {
@@ -1740,6 +1749,9 @@ int __init apic_force_enable(unsigned long addr)
 	return apic_verify();
 }
 
+//Charm start
+#ifndef CONFIG_X86_64
+//Charm end
 /*
  * Detect and initialize APIC
  */

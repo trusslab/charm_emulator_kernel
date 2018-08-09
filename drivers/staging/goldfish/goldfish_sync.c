@@ -34,6 +34,55 @@
 
 #include "sw_sync.h"
 #include "sync.h"
+//Charm start
+#include <linux/kvm_host.h>
+#include <linux/Charm/prints.h>
+#include <linux/of_platform.h>
+#include <linux/kobject.h>
+#include <linux/sysfs.h>
+#include <linux/fs.h>
+
+/*******************************************************
+ ************** sys fs entry for charm log system ******
+ ******************************************************/
+
+static struct kobject *charmlog_kobject;
+static int charmlog=1212;
+
+static ssize_t charmlog_show(struct kobject *kobj, struct kobj_attribute *attr,
+                      char *buf)
+{
+        return sprintf(buf, "%d\n", charmlog);
+}
+static ssize_t charmlog_print(struct kobject *kobj, struct kobj_attribute *attr,
+                      char *buf, size_t count)
+{
+	printk(KERN_ALERT"fuzzer:%s",buf);
+        return count;
+}
+
+static struct kobj_attribute charmlog_attribute =__ATTR(charmlog, 0660, charmlog_show,
+                                                   charmlog_print);
+/*************************************************************/
+
+/*******************************************************
+ ************** send a hypercall to KVM for RPC   ******
+ ******************************************************/
+#define RPC_HYPERCALL 1
+#define PAGE_TRACK_HYPERCALL 2
+void * rpc_to_phone(void * msg, unsigned long int len)
+{
+	 unsigned long msg_phys_addr;
+	 uint64_t  ret;
+	 int rc;
+	 unsigned long ret_phys_addr;
+	 msg_phys_addr = (unsigned long)virt_to_phys(msg);
+	 ret_phys_addr = (unsigned long)virt_to_phys(&ret);
+	 rc = kvm_hypercall4(KVM_HC_CHARM, RPC_HYPERCALL, msg_phys_addr, len ,ret_phys_addr);
+	return (void *)ret;
+}
+/*************************************************************/
+//Charm end
 
 #define ERR(...) printk(KERN_ERR __VA_ARGS__);
 
@@ -832,6 +881,18 @@ int goldfish_sync_probe(struct platform_device *pdev)
 	struct goldfish_sync_state *sync_state = global_sync_state;
 	int status;
 
+//Charm start: sys fs for charm log
+	 int error;
+	 charmlog_kobject = kobject_create_and_add("charmlog",
+                                                 kernel_kobj);
+        if(!charmlog_kobject)
+                return -ENOMEM;
+
+        error = sysfs_create_file(charmlog_kobject, &charmlog_attribute.attr);
+        if (error) {
+                pr_debug("failed to create the charmlog file in /sys/kernel/kobject_example \n");
+        }
+//Charm start	
 	DTRACE();
 
 	sync_state->to_do_end = 0;

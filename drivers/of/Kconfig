@@ -3,7 +3,9 @@ config DTC
 
 config OF
 	bool
-
+#Charm start
+         select OF_EARLY_FLATTREE
+#Charm end
 menu "Device Tree and Open Firmware support"
 	depends on OF
 

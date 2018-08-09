@@ -178,6 +178,17 @@ u64 arch_irq_stat(void)
 	return sum;
 }
 
+//Charm start: from arch/arm64/kernel/irq.c
+void (*handle_arch_irq)(struct pt_regs *) = NULL;
+
+void __init set_handle_irq(void (*handle_irq)(struct pt_regs *))
+{
+	if (handle_arch_irq)
+		return;
+
+	handle_arch_irq = handle_irq;
+}
+//Charm end
 
 /*
  * do_IRQ handles all normal device IRQ's (the special

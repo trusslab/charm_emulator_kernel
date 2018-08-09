@@ -111,6 +111,12 @@
 #include <asm/alternative.h>
 #include <asm/prom.h>
 
+//Charm start
+#include "charm_dtb.h"
+#include <linux/kvm_host.h>
+#include <linux/of_platform.h>
+//Charm end
+
 /*
  * max_low_pfn_mapped: highest direct mapped pfn under 4GB
  * max_pfn_mapped:     highest direct mapped pfn over 4GB
@@ -424,38 +430,79 @@ static void __init reserve_initrd(void)
 }
 #endif /* CONFIG_BLK_DEV_INITRD */
 
+//Charm start: static memory allocation for device tree
+char tmp[30000];
+//Charm end
 static void __init parse_setup_data(void)
 {
-	struct setup_data *data;
-	u64 pa_data, pa_next;
+//Charm start	
+////	struct setup_data *data;
+////	u64 pa_data, pa_next;
+////
+////	pa_data = boot_params.hdr.setup_data;
+////	while (pa_data) {
+////		u32 data_len, map_len, data_type;
+////
+////		map_len = max(PAGE_SIZE - (pa_data & ~PAGE_MASK),
+////			      (u64)sizeof(struct setup_data));
+////		data = early_memremap(pa_data, map_len);
+////		data_len = data->len + sizeof(struct setup_data);
+////		data_type = data->type;
+////		pa_next = data->next;
+////		early_iounmap(data, map_len);
+////
+////		switch (data_type) {
+////		case SETUP_E820_EXT:
+////			parse_e820_ext(pa_data, data_len);
+////			break;
+////		case SETUP_DTB:
+////			add_dtb(pa_data);
+////			break;
+////		case SETUP_EFI:
+////			parse_efi_setup(pa_data, data_len);
+////			break;
+////		default:
+////			break;
+////		}
+////		pa_data = pa_next;
+////	}
 
-	pa_data = boot_params.hdr.setup_data;
-	while (pa_data) {
-		u32 data_len, map_len, data_type;
+/*********************************************************
+*************** add device tree to the kernel ************
+*********************************************************/ 
+	struct setup_data *charm_data;
+	int ret;
+	charm_data= &(tmp[0]);
+	charm_data->next=0;
+	charm_data->type=SETUP_DTB;
+	charm_data->len=arch_x86_kernel_charm_dtb_len;
+	memcpy(charm_data->data, arch_x86_kernel_charm_dtb ,charm_data->len);
+	add_dtb((u64)charm_data);
 
-		map_len = max(PAGE_SIZE - (pa_data & ~PAGE_MASK),
-			      (u64)sizeof(struct setup_data));
-		data = early_memremap(pa_data, map_len);
-		data_len = data->len + sizeof(struct setup_data);
-		data_type = data->type;
-		pa_next = data->next;
-		early_iounmap(data, map_len);
+/*********************************************************
+************ send device physical addreesses to KVM ******
+*********************************************************/ 
+#define RPC_HYPERCALL 1
+#define PAGE_TRACK_HYPERCALL 2
+#define EARLY_DEBUG_HYPERCALL 3	   
+	kvm_hypercall4(KVM_HC_CHARM, EARLY_DEBUG_HYPERCALL, __LINE__, 0,0);
+        ret = kvm_hypercall4(KVM_HC_CHARM, PAGE_TRACK_HYPERCALL,0 ,0 , 0xfda0c); //cci
+        ret = kvm_hypercall4(KVM_HC_CHARM, PAGE_TRACK_HYPERCALL,0 ,0 , 0xfd8c0); //msm-cam
+        ret = kvm_hypercall4(KVM_HC_CHARM, PAGE_TRACK_HYPERCALL,0 ,0 , 0xfda08); //csid
+        ret = kvm_hypercall4(KVM_HC_CHARM, PAGE_TRACK_HYPERCALL,0 ,0 , 0xfda00); //csiphy ispif
+        ret = kvm_hypercall4(KVM_HC_CHARM, PAGE_TRACK_HYPERCALL,0 ,0 , 0xfda0a); //csiphy ispif 
+        ret = kvm_hypercall4(KVM_HC_CHARM, PAGE_TRACK_HYPERCALL,0 ,0 , 0xfda0b); //csiphy
+        ret = kvm_hypercall4(KVM_HC_CHARM, PAGE_TRACK_HYPERCALL,0 ,0 , 0xfda10); //vfe 
+        ret = kvm_hypercall4(KVM_HC_CHARM, PAGE_TRACK_HYPERCALL,0 ,0 , 0xfda40); //vfe 
+        ret = kvm_hypercall4(KVM_HC_CHARM, PAGE_TRACK_HYPERCALL,0 ,0 , 0xfda14); //vfe
+        ret = kvm_hypercall4(KVM_HC_CHARM, PAGE_TRACK_HYPERCALL,0 ,0 , 0xfda04); //cpp
+        ret = kvm_hypercall4(KVM_HC_CHARM, PAGE_TRACK_HYPERCALL,0 ,0 , 0xfda80); //cpp
+        ret = kvm_hypercall4(KVM_HC_CHARM, PAGE_TRACK_HYPERCALL,0 ,0 , 0xfda18); //cpp
+        ret = kvm_hypercall4(KVM_HC_CHARM, PAGE_TRACK_HYPERCALL,0 ,0 , 0xfda1c); //jpeg
+        ret = kvm_hypercall4(KVM_HC_CHARM, PAGE_TRACK_HYPERCALL,0 ,0 , 0xfda60); //jpeg
+        ret = kvm_hypercall4(KVM_HC_CHARM, PAGE_TRACK_HYPERCALL,0 ,0 , 0xfdaa0); //jpeg
+//Charm end	
 
-		switch (data_type) {
-		case SETUP_E820_EXT:
-			parse_e820_ext(pa_data, data_len);
-			break;
-		case SETUP_DTB:
-			add_dtb(pa_data);
-			break;
-		case SETUP_EFI:
-			parse_efi_setup(pa_data, data_len);
-			break;
-		default:
-			break;
-		}
-		pa_data = pa_next;
-	}
 }
 
 static void __init e820_reserve_setup_data(void)
@@ -840,6 +887,10 @@ dump_kernel_offset(struct notifier_block *self, unsigned long v, void *p)
 
 	return 0;
 }
+//Charm start: from arch/arm64/kernel/setup.c
+#include <asm/cputype.h>
+u64 __cpu_logical_map[NR_CPUS] = { [0 ... NR_CPUS-1] = INVALID_HWID };
+//Charm end
 
 /*
  * Determine if we were loaded by an EFI loader.  If so, then we have also been
