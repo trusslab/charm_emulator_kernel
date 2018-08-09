@@ -2,7 +2,11 @@
 #define _ASM_X86_STAT_H
 
 #include <asm/posix_types.h>
-
+//Charm start
+#ifdef CONFIG_COMPAT
+#include <asm/compat.h>
+#endif /* CONFIG_COMPAT */
+//Charm end
 #define STAT_HAVE_NSEC 1
 
 #ifdef __i386__

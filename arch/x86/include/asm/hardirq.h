@@ -59,5 +59,11 @@ extern u64 arch_irq_stat_cpu(unsigned int cpu);
 
 extern u64 arch_irq_stat(void);
 #define arch_irq_stat		arch_irq_stat
-
+//Charm start: from arch/arm64/include/asm/hardirq.h
+/*
+* No arch-specific IRQ flags.
+*/
+#define set_irq_flags(irq, flags)
+//Charm end
+	  
 #endif /* _ASM_X86_HARDIRQ_H */

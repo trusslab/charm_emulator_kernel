@@ -297,12 +297,14 @@ static inline void __user *arch_compat_alloc_user_space(long len)
 {
 	compat_uptr_t sp;
 
-	if (test_thread_flag(TIF_IA32)) {
-		sp = task_pt_regs(current)->sp;
-	} else {
-		/* -128 for the x32 ABI redzone */
-		sp = this_cpu_read(old_rsp) - 128;
-	}
+	//Charm start: FIXME
+	//if (test_thread_flag(TIF_IA32)) {
+	//	sp = task_pt_regs(current)->sp;
+	//} else {
+	//	/* -128 for the x32 ABI redzone */
+	//	sp = this_cpu_read(old_rsp) - 128;
+	//}
+	//Charm end
 
 	return (void __user *)round_down(sp - len, 16);
 }

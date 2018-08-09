@@ -2,6 +2,10 @@
 # Building vDSO images for x86.
 #
 
+#Charm start 
+KCOV_INSTRUMENT         := n
+#Charm end
+
 KBUILD_CFLAGS += $(DISABLE_LTO)
 
 VDSO64-$(CONFIG_X86_64)		:= y

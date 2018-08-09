@@ -74,6 +74,11 @@ build_mmio_write(__writel, "l", unsigned int, "r", )
 #define __raw_readw __readw
 #define __raw_readl __readl
 
+//Charm start
+#define writeb_relaxed(val, addr) __writeb(val, addr)
+#define writew_relaxed(val, addr) __writew(val, addr)
+#define writel_relaxed(val, addr) __writel(val, addr)
+//Charm end
 #define __raw_writeb __writeb
 #define __raw_writew __writew
 #define __raw_writel __writel
@@ -94,6 +99,9 @@ build_mmio_write(writeq, "q", unsigned long, "r", :"memory")
 #define readq			readq
 #define writeq			writeq
 
+//Charm start
+#define writeq_relaxed(val, addr)	writeq(val, addr)
+//Charm end
 #endif
 
 /**
@@ -297,13 +305,13 @@ static inline unsigned type in##bwl##_p(int port)			\
 static inline void outs##bwl(int port, const void *addr, unsigned long count) \
 {									\
 	asm volatile("rep; outs" #bwl					\
-		     : "+S"(addr), "+c"(count) : "d"(port) : "memory");	\
+		     : "+S"(addr), "+c"(count) : "d"(port));		\
 }									\
 									\
 static inline void ins##bwl(int port, void *addr, unsigned long count)	\
 {									\
 	asm volatile("rep; ins" #bwl					\
-		     : "+D"(addr), "+c"(count) : "d"(port) : "memory");	\
+		     : "+D"(addr), "+c"(count) : "d"(port));		\
 }
 
 BUILDIO(b, b, char)

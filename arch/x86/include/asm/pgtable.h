@@ -5,7 +5,9 @@
 #include <asm/e820.h>
 
 #include <asm/pgtable_types.h>
-
+//Charm start
+#include <linux/sizes.h>
+//Charm end
 /*
  * Macro to mark a page protection value as UC-
  */

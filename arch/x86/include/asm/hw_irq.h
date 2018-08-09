@@ -208,5 +208,8 @@ static inline void __setup_vector_irq(int cpu) {}
 #endif
 
 #endif /* !ASSEMBLY_ */
-
+//Charm start: from arch/arm/include/asm/hw_irq.h
+#define IRQF_VALID      (1 << 0)
+//Charm end
+	
 #endif /* _ASM_X86_HW_IRQ_H */

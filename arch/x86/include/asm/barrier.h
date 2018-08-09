@@ -23,6 +23,9 @@
 #define rmb()	asm volatile("lfence":::"memory")
 #define wmb()	asm volatile("sfence" ::: "memory")
 #endif
+//Charm start  FIXME: implement based on arch/arm64/include/asm/barrier.h
+#define dmb(opt)
+//Charm end
 
 /**
  * read_barrier_depends - Flush all pending reads that subsequents reads

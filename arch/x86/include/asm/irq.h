@@ -46,5 +46,7 @@ extern void init_ISA_irqs(void);
 void arch_trigger_all_cpu_backtrace(bool);
 #define arch_trigger_all_cpu_backtrace arch_trigger_all_cpu_backtrace
 #endif
-
+//Charm: from arch/arm64/include/asm/irq.h
+extern void set_handle_irq(void (*handle_irq)(struct pt_regs *));
+//Charm end
 #endif /* _ASM_X86_IRQ_H */

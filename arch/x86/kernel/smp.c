@@ -153,6 +153,21 @@ void native_send_call_func_ipi(const struct cpumask *mask)
 	free_cpumask_var(allbutself);
 }
 
+//Charm start: from arch/arm64/kernel/smp.c
+void handle_IPI(int ipinr, struct pt_regs *regs)
+{
+	/* TODO: implement */
+	BUG();
+}
+
+void (*__smp_cross_call)(const struct cpumask *, unsigned int);
+
+void __init set_smp_cross_call(void (*fn)(const struct cpumask *, unsigned int))
+{
+	__smp_cross_call = fn;
+}
+//Charm end
+
 static int smp_stop_nmi_callback(unsigned int val, struct pt_regs *regs)
 {
 	/* We are registered on stopping cpu too, avoid spurious NMI */

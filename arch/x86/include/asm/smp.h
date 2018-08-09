@@ -165,6 +165,16 @@ int wbinvd_on_all_cpus(void);
 void native_send_call_func_ipi(const struct cpumask *mask);
 void native_send_call_func_single_ipi(int cpu);
 void x86_idle_thread_init(unsigned int cpu, struct task_struct *idle);
+//Charm start
+void handle_IPI(int ipinr, struct pt_regs *regs);
+
+/*
+ * Provide a function to raise an IPI cross call on CPUs in callmap.
+ */
+extern void set_smp_cross_call(void (*)(const struct cpumask *, unsigned int));
+
+extern void (*__smp_cross_call)(const struct cpumask *, unsigned int);
+//Charm end
 
 void smp_store_boot_cpu_info(void);
 void smp_store_cpu_info(int id);
