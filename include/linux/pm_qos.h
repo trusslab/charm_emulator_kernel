@@ -9,6 +9,8 @@
 #include <linux/miscdevice.h>
 #include <linux/device.h>
 #include <linux/workqueue.h>
+//Ardalan
+#include <linux/interrupt.h>
 
 enum {
 	PM_QOS_RESERVED = 0,
@@ -42,11 +44,36 @@ enum pm_qos_flags_status {
 #define PM_QOS_FLAG_NO_POWER_OFF	(1 << 0)
 #define PM_QOS_FLAG_REMOTE_WAKEUP	(1 << 1)
 
-struct pm_qos_request {
-	struct plist_node node;
-	int pm_qos_class;
-	struct delayed_work work; /* for pm_qos_update_request_timeout */
+//Ardalan start
+enum pm_qos_req_type {
+        PM_QOS_REQ_ALL_CORES = 0,
+        PM_QOS_REQ_AFFINE_CORES,
+#ifdef CONFIG_SMP
+        PM_QOS_REQ_AFFINE_IRQ,
+#endif
 };
+//Ardalan end
+
+//Ardalan start
+////struct pm_qos_request {
+////	struct plist_node node;
+////	int pm_qos_class;
+////	struct delayed_work work; /* for pm_qos_update_request_timeout */
+////};
+
+struct pm_qos_request {
+        enum pm_qos_req_type type;
+        struct cpumask cpus_affine;
+#ifdef CONFIG_SMP
+        uint32_t irq;
+        /* Internal structure members */
+        struct irq_affinity_notify irq_notify;
+#endif
+        struct plist_node node;
+        int pm_qos_class;
+        struct delayed_work work; /* for pm_qos_update_request_timeout */
+};
+//Ardalan end
 
 struct pm_qos_flags_request {
 	struct list_head node;

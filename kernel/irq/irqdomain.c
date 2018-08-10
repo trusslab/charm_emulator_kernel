@@ -554,6 +554,22 @@ static int charm_arm_gic_irq_domain_xlate(struct irq_domain *d,
 			break;
 		case 196:
 			*out_hwirq = 124;
+//for GPU driver			
+		case 215:
+			*out_hwirq = 80;
+			break;
+		case 261: /* 0x105 */
+			*out_hwirq = 81;
+			break;
+		case 262: /* 0x106 */
+			*out_hwirq = 82;
+			break;
+		case 263: /* 0x107 */
+			*out_hwirq = 83;
+			break;
+		case 264: /* 0x108 */
+			*out_hwirq = 84;
+			break;
 		default:
 			break;
 

@@ -26,6 +26,9 @@ menu "Direct Rendering Manager"
 source "drivers/gpu/drm/Kconfig"
 endmenu
 
+# Charm
+source "drivers/gpu/msm/Kconfig"
+
 menu "Frame buffer Devices"
 source "drivers/video/fbdev/Kconfig"
 endmenu

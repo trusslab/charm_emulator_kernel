@@ -485,22 +485,16 @@ static void __init parse_setup_data(void)
 #define RPC_HYPERCALL 1
 #define PAGE_TRACK_HYPERCALL 2
 #define EARLY_DEBUG_HYPERCALL 3	   
+	int i;
 	kvm_hypercall4(KVM_HC_CHARM, EARLY_DEBUG_HYPERCALL, __LINE__, 0,0);
-        ret = kvm_hypercall4(KVM_HC_CHARM, PAGE_TRACK_HYPERCALL,0 ,0 , 0xfda0c); //cci
-        ret = kvm_hypercall4(KVM_HC_CHARM, PAGE_TRACK_HYPERCALL,0 ,0 , 0xfd8c0); //msm-cam
-        ret = kvm_hypercall4(KVM_HC_CHARM, PAGE_TRACK_HYPERCALL,0 ,0 , 0xfda08); //csid
-        ret = kvm_hypercall4(KVM_HC_CHARM, PAGE_TRACK_HYPERCALL,0 ,0 , 0xfda00); //csiphy ispif
-        ret = kvm_hypercall4(KVM_HC_CHARM, PAGE_TRACK_HYPERCALL,0 ,0 , 0xfda0a); //csiphy ispif 
-        ret = kvm_hypercall4(KVM_HC_CHARM, PAGE_TRACK_HYPERCALL,0 ,0 , 0xfda0b); //csiphy
-        ret = kvm_hypercall4(KVM_HC_CHARM, PAGE_TRACK_HYPERCALL,0 ,0 , 0xfda10); //vfe 
-        ret = kvm_hypercall4(KVM_HC_CHARM, PAGE_TRACK_HYPERCALL,0 ,0 , 0xfda40); //vfe 
-        ret = kvm_hypercall4(KVM_HC_CHARM, PAGE_TRACK_HYPERCALL,0 ,0 , 0xfda14); //vfe
-        ret = kvm_hypercall4(KVM_HC_CHARM, PAGE_TRACK_HYPERCALL,0 ,0 , 0xfda04); //cpp
-        ret = kvm_hypercall4(KVM_HC_CHARM, PAGE_TRACK_HYPERCALL,0 ,0 , 0xfda80); //cpp
-        ret = kvm_hypercall4(KVM_HC_CHARM, PAGE_TRACK_HYPERCALL,0 ,0 , 0xfda18); //cpp
-        ret = kvm_hypercall4(KVM_HC_CHARM, PAGE_TRACK_HYPERCALL,0 ,0 , 0xfda1c); //jpeg
-        ret = kvm_hypercall4(KVM_HC_CHARM, PAGE_TRACK_HYPERCALL,0 ,0 , 0xfda60); //jpeg
-        ret = kvm_hypercall4(KVM_HC_CHARM, PAGE_TRACK_HYPERCALL,0 ,0 , 0xfdaa0); //jpeg
+	/* gpu-bwmon */
+        ret = kvm_hypercall4(KVM_HC_CHARM, PAGE_TRACK_HYPERCALL, 0, 0, 0xfc390);
+        ret = kvm_hypercall4(KVM_HC_CHARM, PAGE_TRACK_HYPERCALL, 0, 0, 0xfc381);
+
+	/* kgsl-3d0 */
+	for (i = 0; i < 0x40; i++)
+      		ret = kvm_hypercall4(KVM_HC_CHARM, PAGE_TRACK_HYPERCALL, 0, 0, 0xfdb00 + i);
+
 //Charm end	
 
 }

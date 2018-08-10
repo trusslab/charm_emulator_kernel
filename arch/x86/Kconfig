@@ -154,6 +154,30 @@ config X86
         select ARM_GIC
         select ARM_GIC_V3
         select HANDLE_DOMAIN_IRQ
+	select MSM_KGSL
+	select KGSL_PER_PROCESS_PAGE_TABLE
+	select DEBUG_FS
+	select SYNC
+	select COMPAT
+	select MSM_BIMC_BWMON
+	select MSM_BUS_SCALING
+	select DEVFREQ_GOV_MSM_GPUBW_MON
+	select DEVFREQ_GOV_MSM_BW_HWMON
+	select IOMMU_HELPER
+	select IOMMU_API
+	select IOMMU_SUPPORT
+	select OF_IOMMU
+	select MSM_IOMMU
+	select MSM_IOMMU_V1
+	select MSM_IOMMU_VBIF_CHECK
+	select IOMMU_FORCE_4K_MAPPINGS
+	select BUS_TOPOLOGY_ADHOC
+	select DEBUG_BUS_VOTER
+	select DEVFREQ_GOV_PERFORMANCE
+	select DEVFREQ_GOV_POWERSAVE
+	select DEVFREQ_GOV_USERSPACE
+	select OF_DEVICE
+	select ONESHOT_SYNC
         # Charm end
 
 

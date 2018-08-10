@@ -9,3 +9,96 @@ config QCOM_GSBI
           functions for connecting the underlying serial UART, SPI, and I2C
           devices to the output pins.
 
+config MSM_QDSP6_APRV2
+        bool "Audio QDSP6 APRv2 support"
+        depends on MSM_SMD
+        help
+          Enable APRv2 IPC protocol support between
+          application processor and QDSP6. APR is
+          used by audio driver to configure QDSP6's
+          ASM, ADM and AFE.
+#Charm
+config MSM_SUBSYSTEM_RESTART
+        bool "MSM Subsystem Restart"
+        help
+          This option enables the MSM subsystem restart framework.
+
+          The MSM subsystem restart framework provides support to boot,
+          shutdown, and restart subsystems with a reference counted API.
+          It also notifies userspace of transitions between these states via 
+          sysfs.
+config MSM_QMI_INTERFACE
+        depends on IPC_ROUTER
+        depends on QMI_ENCDEC
+        bool "MSM QMI Interface Library"
+        help
+          Library to send and receive QMI messages over IPC Router.
+          This library provides interface functions to the kernel drivers
+          to perform QMI message marshaling and transport them over IPC
+          Router.
+
+#Charm end
+# Charm start
+config MSM_OCMEM
+        bool "MSM On-Chip memory driver (OCMEM)"
+        help
+          Enable support for On-Chip Memory available on certain MSM chipsets.
+          OCMEM is a low latency, high performance pool shared by subsystems.
+
+config MSM_OCMEM_LOCAL_POWER_CTRL
+        bool "OCMEM Local Power Control"
+        depends on MSM_OCMEM
+        help
+          Enable direct power management of the OCMEM core by the
+          OCMEM driver. By default power management is delegated to
+          the RPM. Selecting this option causes the OCMEM driver to
+          directly handle the various macro power transitions.
+
+config MSM_OCMEM_DEBUG
+        bool "OCMEM Debug Support"
+        depends on MSM_OCMEM
+        help
+          Enable debug options for On-chip Memory (OCMEM) driver.
+          Various debug options include memory, power and latency.
+          Choosing one of these options allows debugging of each
+          individual subsystem separately.
+
+config MSM_OCMEM_NONSECURE
+        bool "OCMEM Non Secure Mode"
+        depends on MSM_OCMEM_DEBUG
+        help
+          Disable OCMEM interaction with secure processor.
+          By default OCMEM is secured and accesses for each master
+          is requested by the OCMEM driver. Selecting this option
+          causes the OCMEM memory to be in non-secure state unless
+          its locked down by the secure processor.
+
+config MSM_OCMEM_POWER_DEBUG
+        bool "OCMEM Power Debug Support"
+        depends on MSM_OCMEM_DEBUG
+        help
+          Enable debug support for OCMEM power management.
+          This adds support for verifying all power management
+          related operations of OCMEM. Both local power management
+          and RPM assisted power management operations are supported.
+
+config MSM_OCMEM_DEBUG_ALWAYS_ON
+        bool "Keep OCMEM always turned ON"
+        depends on MSM_OCMEM_DEBUG
+        help
+          Always vote for all OCMEM clocks and keep all OCMEM
+          macros turned ON and never allow them to be turned OFF.
+          Both local power management and RPM assisted power modes
+          are supported for individual macro power control operations.
+
+config MSM_OCMEM_POWER_DISABLE
+        bool "OCMEM Disable Power Control"
+        depends on MSM_OCMEM
+        help
+          Disable all OCMEM power management.
+          Skip all OCMEM power operations that turn ON or
+          turn OFF the macros. Both local power management and
+          RPM assisted power management operations are skipped.
+          Enable this configuration if OCMEM is being exclusively
+          used as GMEM or OCIMEM.
+# Charm end

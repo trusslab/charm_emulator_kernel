@@ -84,5 +84,8 @@ config OF_RESERVED_MEM
 
 config OF_RESOLVE
 	bool
-
+#Charm start
+config OF_DEVICE
+        def_bool y
+#Charm end
 endmenu # OF

@@ -18,6 +18,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef __LINUX_CHARM_RPC_H__
+#define __LINUX_CHARM_RPC_H__
+
 #include <linux/device.h>
 //#include <linux/pinctrl/core.h>
 #include <linux/clk.h>
@@ -29,24 +32,31 @@
 #include <linux/power_supply.h>
 
 #define clk_get(dev,con_id)					 	clk_get__remote(dev,con_id)					 
+#define devm_clk_get(dev,con_id)					 clk_get__remote(dev,con_id)					 
 #define clk_put(clk) 							clk_put__remote(clk) 						
+#define devm_clk_put(clk) 							clk_put__remote(clk) 						
 #define clk_unprepare(clk) 						clk_unprepare__remote(clk) 					
 #define clk_disable(clk) 						clk_disable__remote(clk) 					
 #define clk_round_rate(clk,rate) 					clk_round_rate__remote(clk,rate) 				
 #define clk_set_rate(clk,rate) 						clk_set_rate__remote(clk,rate) 				
 #define clk_get_rate(clk) 						clk_get_rate__remote(clk) 					
 #define clk_prepare(clk) 						clk_prepare__remote(clk) 						
+#define clk_prepare_enable(clk) 					clk_prepare_enable__remote(clk) 						
+#define clk_disable_unprepare(clk) 					clk_disable_unprepare__remote(clk) 						
 #define clk_enable(clk) 						clk_enable__remote(clk) 						
 #define clk_set_parent(clk,parent) 					clk_set_parent__remote(clk,parent) 					
 #define clk_reset(clk,action) 						clk_reset__remote(clk,action) 					
 
 #define regulator_get(dev,con_id) 					regulator_get__remote(dev,con_id) 						
+#define devm_regulator_get(dev,con_id) 					regulator_get__remote(dev,con_id) 						
 #define regulator_enable(regul) 					regulator_enable__remote(regul) 					
 #define regulator_set_voltage(regul,vmin,vmax) 				regulator_set_voltage__remote(regul,vmin,vmax) 				
 #define regulator_set_optimum_mode(regul,iop) 				regulator_set_optimum_mode__remote(regul,iop) 						
 #define regulator_count_voltages(regul) 				regulator_count_voltages__remote(regul) 					
 #define regulator_disable(regul) 					regulator_disable__remote(regul) 					
 #define regulator_put(regul) 						regulator_put__remote(regul) 							
+#define devm_regulator_put(regul) 						regulator_put__remote(regul) 							
+#define regulator_is_enabled(regul) 					regulator_is_enabled__remote(regul) 							
 #define regulator_bulk_get(dev,num_consumers,consumers)			regulator_bulk_get__remote(dev,num_consumers,consumers)	
 
 #define rpm_regulator_get(dev,supply)					rpm_regulator_get__remote(dev,supply)						 		
@@ -104,6 +114,9 @@
 #define power_supply_get_by_name(name)					power_supply_get_by_name__remote(name)
 #define power_supply_set_hi_power_state(psy,value)			power_supply_set_hi_power_state__remote(psy,value)
 #define power_supply_set_low_power_state(psy,value)			power_supply_set_low_power_state__remote(psy,value)
+
+
+
 //----------------------------------------------------------------------------------------
 struct clk *clk_get__remote(struct device *dev, const char *con_id);
 int clk_put__remote(struct clk *clk);
@@ -113,6 +126,8 @@ long clk_round_rate__remote(struct clk *clk, unsigned long rate);
 int clk_set_rate__remote(struct clk *clk, unsigned long rate);
 unsigned long clk_get_rate__remote(struct clk *clk);
 int clk_prepare__remote(struct clk *clk);
+int clk_prepare_enable__remote(struct clk *clk);
+void clk_disable_unprepare__remote(struct clk *clk);
 int clk_enable__remote(struct clk *clk);
 int clk_set_parent__remote(struct clk *clk, struct clk *parent);
 int clk_reset__remote(struct clk *clk, enum clk_reset_action action);
@@ -125,6 +140,7 @@ int regulator_set_optimum_mode__remote(struct regulator * regul, int iop);
 int regulator_count_voltages__remote(struct regulator *regul);
 int regulator_disable__remote(struct regulator * regul);
 int regulator_put__remote(struct regulator * regul);
+int regulator_is_enabled__remote(struct regulator *regulator);
 int regulator_bulk_get__remote(struct device *dev, int num_consumers, struct regulator_bulk_data *consumers);
 
 
@@ -191,3 +207,5 @@ struct iommu_group *iommu_group_find__remote(const char *name);
 struct power_supply *power_supply_get_by_name__remote(const char *name);
 int power_supply_set_hi_power_state__remote(struct power_supply *psy, int value);
 int power_supply_set_low_power_state__remote(struct power_supply *psy, int value);
+
+#endif /* __LINUX_CHARM_RPC_H__ */

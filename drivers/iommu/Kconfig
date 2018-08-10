@@ -17,31 +17,157 @@ config OF_IOMMU
        def_bool y
        depends on OF
 
-config FSL_PAMU
-	bool "Freescale IOMMU support"
-	depends on PPC_E500MC
-	select IOMMU_API
-	select GENERIC_ALLOCATOR
-	help
-	  Freescale PAMU support. PAMU is the IOMMU present on Freescale QorIQ platforms.
-	  PAMU can authorize memory access, remap the memory address, and remap I/O
-	  transaction types.
-
 # MSM IOMMU support
+
+# MSM_IOMMU always gets selected by whoever wants it.
 config MSM_IOMMU
-	bool "MSM IOMMU Support"
-	depends on ARCH_MSM8X60 || ARCH_MSM8960
+	bool
+	select ARM_DMA_USE_IOMMU if ARM
+	select ARM64_DMA_USE_IOMMU if ARM64
+
+# MSM IOMMUv0 support
+config MSM_IOMMU_V0
+	bool "MSM IOMMUv0 Support"
+	depends on ARCH_MSM8X60 || ARCH_MSM8960 || ARCH_APQ8064 || ARCH_MSM8610
 	select IOMMU_API
+	select MSM_IOMMU
 	help
-	  Support for the IOMMUs found on certain Qualcomm SOCs.
+	  Support for the IOMMUs (v0) found on certain Qualcomm SOCs.
 	  These IOMMUs allow virtualization of the address space used by most
 	  cores within the multimedia subsystem.
 
 	  If unsure, say N here.
 
+# MSM IOMMUv1 support
+config MSM_IOMMU_V1
+	bool "MSM IOMMUv1 Support"
+	depends on ARCH_MSM8974 || ARCH_MSM8226 || ARCH_APQ8084 || ARCH_MSM8916 || ARCH_MSM8994 || ARCH_MSM8992 || ARCH_MSM8909
+	select IOMMU_API
+	select MSM_IOMMU
+	help
+	  Support for the IOMMUs (v1) found on certain Qualcomm SOCs.
+	  These IOMMUs allow virtualization of the address space used by most
+	  cores within the multimedia subsystem.
+
+	  If unsure, say N here.
+
+# MSM IOMMU sync lock support
+config MSM_IOMMU_SYNC
+	bool "MSM IOMMU Sync Lock Support"
+	depends on (ARCH_MSM8X60 || ARCH_MSM8960 || ARCH_APQ8064 || ARCH_MSM8930 || ARCH_MSM8610) && MSM_IOMMU_V0
+	help
+	  Say Y here if you want the IOMMU to grab a remote spinlock to ensure
+	  synchronization between IOMMU accesses by CPU and other exectution
+	  environments in the SoC.
+
+	  If unsure, say N here.
+
+# MSM IOMMU CPU-GPU sync programming support
+config MSM_IOMMU_GPU_SYNC
+	bool "MSM IOMMU CPU-GPU Sync Support"
+	depends on (ARCH_MSM8X60 || ARCH_MSM8960 || ARCH_APQ8064 || ARCH_MSM8930) && MSM_IOMMU_V0
+	select  MSM_IOMMU_SYNC
+	help
+	  Say Y here if you want to synchronize access to IOMMU configuration
+	  port between CPU and GPU. CPU will grab a remote spinlock before
+	  accessing IOMMU configuration registers and GPU will do the same.
+
+	  If unsure, say N here.
+
+config MSM_IOMMU_PMON
+	bool "MSM IOMMU Perfomance Monitoring Support"
+	depends on (ARCH_MSM8974 || ARCH_MSM8610 || ARCH_MSM8226 || ARCH_APQ8084) && MSM_IOMMU
+	help
+	  Support for monitoring IOMMUs performance on certain Qualcomm SOCs.
+	  It captures TLB statistics per context bank of the IOMMU as an
+	  indication of its performance metric.
+
+	  If unsure, say N here.
+
 config IOMMU_PGTABLES_L2
-	def_bool y
+	bool "Allow SMMU page tables in the L2 cache (Experimental)"
 	depends on MSM_IOMMU && MMU && SMP && CPU_DCACHE_DISABLE=n
+        help
+         Improves TLB miss latency at the expense of potential L2 pollution.
+         However, with large multimedia buffers, the TLB should mostly contain
+         section mappings and TLB misses should be quite infrequent.
+         Most people can probably say Y here.
+
+config IOMMU_LPAE
+	bool "Enable support for LPAE in IOMMU"
+	depends on MSM_IOMMU
+	help
+	  Enables Large Physical Address Extension (LPAE) for IOMMU. This allows
+	  clients of IOMMU to access physical addresses that are greater than
+	  32 bits.
+
+	  If unsure, say N here.
+
+config MSM_IOMMU_VBIF_CHECK
+	bool "Enable support for VBIF check when IOMMU gets stuck"
+	depends on MSM_IOMMU
+	help
+	  Enables an extra check in the IOMMU driver that logs debugging
+	  information when TLB sync or iommu halt issue occurs. This helps
+	  in debugging such issues.
+
+	  If unsure, say N here.
+
+config IOMMU_NON_SECURE
+	bool "Turns on programming of secure SMMU by kernel"
+	depends on MSM_IOMMU
+        help
+         Say Y here if you want the kernel to program all SMMUs regardless of
+         whether SMMUs are secure or not. A secure SMMU is an SMMU that has
+         its global address space programmed by the secure environment. In
+         addition some of the context banks might be owned/programmed by the
+         secure environment for a secure SMMU. Enabling this feature can be
+         used during testing when the secure environment is not available
+         and the kernel needs to program all the SMMUs.
+
+         If unsure, say N here.
+
+config IOMMU_FORCE_4K_MAPPINGS
+	bool "Turns off mapping optimization and map only 4K pages"
+	depends on MSM_IOMMU
+        help
+         Say Y here if you want the IOMMU driver to map buffers with
+         4KB mapping only. With this, we don't get performance gains
+         by optimizing mapping. This is a debug feature and should be
+         used only when we want to profile the performance in the
+         worst case scenario.
+
+         If unsure, say N here.
+
+config MSM_IOMMU_TLBINVAL_ON_MAP
+	bool "Invalidates the SMMU TLB on map"
+	depends on MSM_IOMMU
+	help
+	 Say Y here if you want to invalidate the SMMU TLB during map
+	 operations. This feature needs to be enabled only on older
+	 targets which have a hardware bug and need the TLB to be
+	 invalidated on all map and map range calls.
+
+	 If unsure, say Y here.
+
+config MMU500_ACTIVE_PREFETCH_BUG_WITH_SECTION_MAPPING
+	bool "Don't align Virtual address at 1MB boundary"
+	depends on MSM_IOMMU
+	help
+	 Say Y here if the MMU500 revision has a bug in active prefetch
+         which can cause TLB corruptions due to 1MB alignment of a buffer.
+         Here is the sequence which will surface this BUG.
+	 1) Create a 2-level mapping in v7S format for 1MB buffer. Start of
+	    the buffer should be at even MB boundary.
+	 2) Create a section mapping for 1MB buffer adjacent to previous
+	    mapping in step 1.
+	 3) Access last page from 2 level mapping followed by an access into
+	    section mapped area.
+	 4) Step 3 will result into TLB corruption and this corruption can
+	    lead to any misbehavior (like Permission fault) for sub-sequent
+	    transactions.
+
+	 If unsure, say Y here if IOMMU mapping will not exhaust the VA space.
 
 # AMD IOMMU support
 config AMD_IOMMU
@@ -52,7 +178,7 @@ config AMD_IOMMU
 	select PCI_PRI
 	select PCI_PASID
 	select IOMMU_API
-	depends on X86_64 && PCI && ACPI
+	depends on X86_64 && PCI && ACPI && X86_IO_APIC
 	---help---
 	  With this option you can enable support for AMD IOMMU hardware in
 	  your system. An IOMMU is a hardware component which provides
@@ -76,7 +202,7 @@ config AMD_IOMMU_STATS
 
 config AMD_IOMMU_V2
 	tristate "AMD IOMMU Version 2 driver"
-	depends on AMD_IOMMU
+	depends on AMD_IOMMU && PROFILING
 	select MMU_NOTIFIER
 	---help---
 	  This option enables support for the AMD IOMMUv2 features of the IOMMU
@@ -143,12 +269,16 @@ config OMAP_IOMMU
 	depends on ARCH_OMAP2PLUS
 	select IOMMU_API
 
+config OMAP_IOVMM
+	tristate "OMAP IO Virtual Memory Manager Support"
+	depends on OMAP_IOMMU
+
 config OMAP_IOMMU_DEBUG
-       tristate "Export OMAP IOMMU internals in DebugFS"
-       depends on OMAP_IOMMU && DEBUG_FS
+       tristate "Export OMAP IOMMU/IOVMM internals in DebugFS"
+       depends on OMAP_IOVMM && DEBUG_FS
        help
          Select this to see extensive information about
-         the internal state of OMAP IOMMU in debugfs.
+         the internal state of OMAP IOMMU/IOVMM in debugfs.
 
          Say N unless you know you need this.
 
@@ -174,14 +304,13 @@ config TEGRA_IOMMU_SMMU
 
 config EXYNOS_IOMMU
 	bool "Exynos IOMMU Support"
-	depends on ARCH_EXYNOS
+	depends on ARCH_EXYNOS && EXYNOS_DEV_SYSMMU
 	select IOMMU_API
-	select ARM_DMA_USE_IOMMU
 	help
-	  Support for the IOMMU (System MMU) of Samsung Exynos application
-	  processor family. This enables H/W multimedia accelerators to see
-	  non-linear physical memory chunks as linear memory in their
-	  address space.
+	  Support for the IOMMU(System MMU) of Samsung Exynos application
+	  processor family. This enables H/W multimedia accellerators to see
+	  non-linear physical memory chunks as a linear memory in their
+	  address spaces
 
 	  If unsure, say N here.
 
@@ -190,9 +319,9 @@ config EXYNOS_IOMMU_DEBUG
 	depends on EXYNOS_IOMMU
 	help
 	  Select this to see the detailed log message that shows what
-	  happens in the IOMMU driver.
+	  happens in the IOMMU driver
 
-	  Say N unless you need kernel log message for IOMMU debugging.
+	  Say N unless you need kernel log message for IOMMU debugging
 
 config SHMOBILE_IPMMU
 	bool
@@ -203,8 +332,7 @@ config SHMOBILE_IPMMU_TLB
 config SHMOBILE_IOMMU
 	bool "IOMMU for Renesas IPMMU/IPMMUI"
 	default n
-	depends on ARM
-	depends on ARCH_SHMOBILE || COMPILE_TEST
+	depends on (ARM && ARCH_SHMOBILE)
 	select IOMMU_API
 	select ARM_DMA_USE_IOMMU
 	select SHMOBILE_IPMMU
@@ -269,31 +397,12 @@ config SHMOBILE_IOMMU_L1SIZE
 	default 256 if SHMOBILE_IOMMU_ADDRSIZE_64MB
 	default 128 if SHMOBILE_IOMMU_ADDRSIZE_32MB
 
-config IPMMU_VMSA
-	bool "Renesas VMSA-compatible IPMMU"
-	depends on ARM_LPAE
-	depends on ARCH_SHMOBILE || COMPILE_TEST
-	select IOMMU_API
-	select ARM_DMA_USE_IOMMU
-	help
-	  Support for the Renesas VMSA-compatible IPMMU Renesas found in the
-	  R-Mobile APE6 and R-Car H2/M2 SoCs.
-
-	  If unsure, say N.
-
-config SPAPR_TCE_IOMMU
-	bool "sPAPR TCE IOMMU Support"
-	depends on PPC_POWERNV || PPC_PSERIES
-	select IOMMU_API
-	help
-	  Enables bits of IOMMU API required by VFIO. The iommu_ops
-	  is not implemented as it is not necessary for VFIO.
-
 config ARM_SMMU
 	bool "ARM Ltd. System MMU (SMMU) Support"
 	depends on ARM64 || (ARM_LPAE && OF)
 	select IOMMU_API
 	select ARM_DMA_USE_IOMMU if ARM
+	select ARM64_DMA_USE_IOMMU if ARM64
 	help
 	  Support for implementations of the ARM System MMU architecture
 	  versions 1 and 2. The driver supports both v7l and v8l table

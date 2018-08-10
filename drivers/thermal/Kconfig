@@ -252,7 +252,16 @@ config INT340X_THERMAL
 config ACPI_THERMAL_REL
 	tristate
 	depends on ACPI
-
+#Charm start 
+config SUPPLY_LM_MONITOR 
+        bool "SUPPLY current monitor driver" 
+        depends on THERMAL && PM_OPP && CPU_FREQ
+        help
+         This enables to monitor power states of different HW blocks
+         including cpu, gpu and modem, number of cores online and SoC
+         temperature. Based on these inputs, the driver throttles
+         apps subsystem.
+#Charm end
 menu "Texas Instruments thermal drivers"
 source "drivers/thermal/ti-soc-thermal/Kconfig"
 endmenu

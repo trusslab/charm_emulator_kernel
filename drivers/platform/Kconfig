@@ -4,3 +4,6 @@ endif
 source "drivers/platform/goldfish/Kconfig"
 
 source "drivers/platform/chrome/Kconfig"
+
+# Charm
+source "drivers/platform/msm/Kconfig"

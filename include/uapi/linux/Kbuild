@@ -441,3 +441,8 @@ header-y += xfrm.h
 header-y += hw_breakpoint.h
 header-y += zorro.h
 header-y += zorro_ids.h
+# Charm start
+header-y += ashmem.h
+header-y += msm_kgsl.h
+header-y += oneshot_sync.h
+# Charm end

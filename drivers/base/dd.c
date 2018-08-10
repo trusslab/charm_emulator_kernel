@@ -435,7 +435,12 @@ int driver_probe_device(struct device_driver *drv, struct device *dev)
 		  strcmp(compatible,"qcom,actuator"    )&&
 		  strcmp(compatible,"qcom,csid-v3.1"    )&&
 		  strcmp(compatible,"qcom,eeprom")&&
-		  strcmp(compatible,"qcom,camera")
+		  strcmp(compatible,"qcom,camera")&&
+//GPU driver		  
+                  strcmp(compatible,"qcom,kgsl-busmon")&&
+                  strcmp(compatible,"qcom,devbw")&&
+                  strcmp(compatible,"qcom,bimc-bwmon")&&
+                  strcmp(compatible,"kgsl-3d0")
 		  )
 		  {
 			  rpc_do_flag=0;

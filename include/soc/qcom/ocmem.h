@@ -17,6 +17,8 @@
 #include <linux/module.h>
 #include <linux/notifier.h>
 #include <linux/err.h>
+//Charm: FIXME
+#include <linux/sizes.h>
 
 #define OCMEM_MIN_ALLOC SZ_64K
 #define OCMEM_MIN_ALIGN SZ_64K

@@ -157,4 +157,9 @@ static inline int rodata_test(void)
 }
 #endif
 
+//Charm start: FIXME
+#define dmac_flush_range// __dma_flush_range
+#define dmac_inv_range// __dma_inv_range
+#define dmac_clean_range// __dma_clean_range
+//Charm end
 #endif /* _ASM_X86_CACHEFLUSH_H */

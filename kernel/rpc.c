@@ -100,6 +100,11 @@
 #define POWER_SUPPLY_SET_HI_POWER_STATE_RPC_CODE 59
 #define POWER_SUPPLY_SET_LOW_POWER_STATE_RPC_CODE 60
 #define CLK_OPS_LIST_RATE_RPC_CODE 61
+#define REGULATOR_IS_ENABLED_RPC_CODE 62
+#define CLK_GET_PARENT_RPC_CODE 63
+#define CLK_GET_SYS_RPC_CODE 64
+#define GPIO_EXPORT_RPC_CODE 65
+#define GPIO_IS_VALID_RPC_CODE 66
 
 //#undef PRINTKL
 //#define PRINTKL(fmt,args...)
@@ -126,7 +131,7 @@ struct clk *clk_get__remote(struct device *dev, const char *con_id)
 	PRINTKL("[1]dev_id=%s,con_id=%s , of_node_name=%s,compatible=%s",dev_id,con_id,of_node_name,compatible);
 	offset=0;
 	rpc_code=CLK_GET_RPC_CODE;
-	msg_len= strlen(dev_id)+1 + strlen (con_id)+1 + strlen(of_node_name)+1  +2*sizeof(msg_len)+sizeof(rpc_code);
+	msg_len= strlen(dev_id)+1 + strlen (con_id)+1 + strlen(of_node_name)+1  +3*sizeof(msg_len)+sizeof(rpc_code);
 	rpc_buf =  kmalloc(PAGE_SIZE, GFP_KERNEL);
 	memcpy(rpc_buf+offset, &rpc_code , sizeof(rpc_code));
 	offset+=sizeof(rpc_code);
@@ -159,6 +164,49 @@ struct clk *clk_get__remote(struct device *dev, const char *con_id)
 	PRINTKL("[2]");
         kfree(rpc_buf);
 	return clk;
+}
+struct clk *clk_get_sys__remote(const char *dev_id, const char *con_id){
+
+        struct clk *clk;
+	
+	void * rpc_buf;
+	void * return_data;
+	int msg_len;
+	uint64_t rpc_code;
+	unsigned long int offset;
+
+	PRINTKL("[1]dev_id=%s,con_id=%s",dev_id,con_id);
+	offset=0;
+	rpc_code=CLK_GET_SYS_RPC_CODE;
+	msg_len= strlen(dev_id)+1 + strlen (con_id)+1 +2*sizeof(msg_len)+sizeof(rpc_code);
+	rpc_buf =  kmalloc(PAGE_SIZE, GFP_KERNEL);
+	memcpy(rpc_buf+offset, &rpc_code , sizeof(rpc_code));
+	offset+=sizeof(rpc_code);
+
+	msg_len = strlen(dev_id)+1;
+	memcpy(rpc_buf+offset, &msg_len , sizeof(msg_len));
+	offset+= sizeof(msg_len);	
+	memcpy(rpc_buf+offset,dev_id, msg_len);
+	offset+=msg_len;
+
+
+
+	msg_len=strlen(con_id)+1;	
+	memcpy(rpc_buf+offset, &msg_len , sizeof(msg_len));
+	offset+= sizeof(msg_len);	
+	memcpy(rpc_buf+offset, con_id, msg_len);
+	offset+= msg_len;
+
+
+
+ 	return_data = rpc_to_phone(rpc_buf, offset);
+	
+	memcpy(&clk, &return_data, 8);
+
+	PRINTKL("[2]");
+        kfree(rpc_buf);
+	return clk;
+
 }
 long clk_round_rate__remote(struct clk *clk, unsigned long rate)
 {
@@ -279,6 +327,92 @@ unsigned long clk_get_rate__remote(struct clk *clk)
 
 }
 
+int clk_disable__remote(struct clk *clk)
+{
+	int rc;
+	
+        void * rpc_buf;
+        void * return_data;
+        int msg_len;
+        uint64_t rpc_code; 
+        unsigned long int offset;
+	PRINTKL("");
+        offset=0;
+        rpc_code= CLK_DISABLE_RPC_CODE;
+        msg_len=  8+sizeof(rpc_code);
+        rpc_buf =  kmalloc(PAGE_SIZE, GFP_KERNEL);
+        memcpy(rpc_buf+offset,&rpc_code , sizeof(rpc_code));
+        offset+=sizeof(rpc_code);
+        memcpy(rpc_buf+offset, &clk , 8 );
+        offset+=8;
+
+        return_data = rpc_to_phone(rpc_buf, offset);
+
+	memcpy( &rc, &return_data, sizeof(int));
+	PRINTKL("rc=%d",rc);
+	if(rc!=999){
+		PRINTKL("charm is disconnected or phone crashed");
+		BUG();
+	}
+	kfree(rpc_buf);
+	 return rc;
+}
+
+
+int clk_unprepare__remote(struct clk *clk)
+{
+	int rc;
+	
+        void * rpc_buf;
+        void * return_data;
+        int msg_len;
+        uint64_t rpc_code; 
+        unsigned long int offset;
+	PRINTKL("");
+        offset=0;
+        rpc_code= CLK_UNPREPARE_RPC_CODE;
+        msg_len=  8+sizeof(rpc_code);
+        rpc_buf =  kmalloc(PAGE_SIZE, GFP_KERNEL);
+        memcpy(rpc_buf+offset,&rpc_code , sizeof(rpc_code));
+        offset+=sizeof(rpc_code);
+        memcpy(rpc_buf+offset, &clk , 8 );
+        offset+=8;
+
+        return_data = rpc_to_phone(rpc_buf, offset);
+
+	memcpy( &rc, &return_data, sizeof(int));
+	PRINTKL("rc=%d",rc);
+	kfree(rpc_buf);
+	 return rc;
+}
+
+
+int clk_put__remote(struct clk *clk)
+{
+	int rc;
+	
+        void * rpc_buf;
+        void * return_data;
+        int msg_len;
+        uint64_t rpc_code; 
+        unsigned long int offset;
+	PRINTKL("");
+        offset=0;
+        rpc_code= CLK_PUT_RPC_CODE;
+        msg_len=  8+sizeof(rpc_code);
+        rpc_buf =  kmalloc(PAGE_SIZE, GFP_KERNEL);
+        memcpy(rpc_buf+offset,&rpc_code , sizeof(rpc_code));
+        offset+=sizeof(rpc_code);
+        memcpy(rpc_buf+offset, &clk , 8 );
+        offset+=8;
+
+        return_data = rpc_to_phone(rpc_buf, offset);
+
+	memcpy( &rc, &return_data, sizeof(int));
+	PRINTKL("rc=%d",rc);
+	kfree(rpc_buf);
+	 return rc;
+}
 int clk_prepare__remote(struct clk *clk)
 {
 	int rc;
@@ -306,6 +440,8 @@ int clk_prepare__remote(struct clk *clk)
 	 return rc;
 
 }
+
+
 
 int clk_set_parent__remote(struct clk *clk, struct clk *parent)
 {
@@ -337,6 +473,37 @@ int clk_set_parent__remote(struct clk *clk, struct clk *parent)
 	kfree(rpc_buf);
 	 return rc;
 }
+
+
+struct clk *clk_get_parent__remote(struct clk *clk)
+{
+        struct clk *parent_clk;
+	
+        void * rpc_buf;
+        void * return_data;
+        int msg_len;
+        uint64_t rpc_code; 
+        unsigned long int offset;
+	PRINTKL("");
+        offset=0;
+        rpc_code= CLK_GET_PARENT_RPC_CODE;
+        msg_len=  8+8+sizeof(rpc_code);
+        rpc_buf =  kmalloc(PAGE_SIZE, GFP_KERNEL);
+        memcpy(rpc_buf+offset, &rpc_code , sizeof(rpc_code));
+        offset+=sizeof(rpc_code);
+        memcpy(rpc_buf+offset, &clk , 8 );
+        offset+=8;
+
+
+ 	return_data = rpc_to_phone(rpc_buf, offset);
+	
+	memcpy(&parent_clk, &return_data, 8);
+
+	PRINTKL("[2]");
+        kfree(rpc_buf);
+	return parent_clk;
+}
+
 int clk_enable__remote(struct clk *clk)
 {
 	int rc;
@@ -365,6 +532,24 @@ int clk_enable__remote(struct clk *clk)
 	 return rc;
 }
 
+int clk_prepare_enable__remote(struct clk *clk)
+{
+         int ret;
+ 
+         ret = clk_prepare__remote(clk);
+         if (ret)
+                 return ret;
+         ret = clk_enable__remote(clk);
+         if (ret)
+                 clk_unprepare__remote(clk);
+ 
+         return ret;
+}
+void clk_disable_unprepare__remote(struct clk *clk)
+{
+         clk_disable(clk);
+         clk_unprepare(clk);
+}
 struct rpm_regulator *rpm_regulator_get__remote(struct device *dev, const char *con_id)
 {
 
@@ -700,6 +885,33 @@ int regulator_disable__remote(struct regulator * regul)
 	 return rc;
 }
 
+int regulator_is_enabled__remote(struct regulator * regul)
+{
+
+	int rc;
+	
+        void * rpc_buf;
+        void * return_data;
+        int msg_len;
+        uint64_t rpc_code; 
+        unsigned long int offset;
+	PRINTKL("");
+        offset=0;
+        rpc_code= REGULATOR_IS_ENABLED_RPC_CODE;
+        msg_len=  8+sizeof(rpc_code);
+        rpc_buf =  kmalloc(PAGE_SIZE, GFP_KERNEL);
+        memcpy(rpc_buf+offset,&rpc_code , sizeof(rpc_code));
+        offset+=sizeof(rpc_code);
+        memcpy(rpc_buf+offset, &regul , 8 );
+        offset+=8;
+
+        return_data = rpc_to_phone(rpc_buf, offset);
+
+	memcpy( &rc, &return_data, sizeof(int));
+	PRINTKL("rc=%d",rc);
+	kfree(rpc_buf);
+	 return rc;
+}
 int regulator_put__remote(struct regulator * regul)
 {
 
@@ -1157,6 +1369,68 @@ int gpio_direction_input__remote(unsigned gpio)
         kfree(rpc_buf);
 	 return rc;
 
+}
+int gpio_export__remote(unsigned gpio, bool value)
+{
+
+        int rc;
+
+        void * rpc_buf;
+        void * return_data;
+        int msg_len;
+        uint64_t rpc_code;
+        unsigned long int offset;
+        PRINTKL("");
+        offset=0;
+        rpc_code= GPIO_EXPORT_RPC_CODE;
+        msg_len=  sizeof(unsigned)+sizeof(bool)+sizeof(rpc_code);
+        rpc_buf =  kmalloc(PAGE_SIZE, GFP_KERNEL);
+        memcpy(rpc_buf+offset,&rpc_code , sizeof(rpc_code));
+        offset+=sizeof(rpc_code);
+
+        memcpy(rpc_buf+offset, &gpio , sizeof(unsigned) );
+        offset+=sizeof(unsigned);
+
+        memcpy(rpc_buf+offset, &value , sizeof(bool) );
+        offset+=sizeof(bool);
+
+
+
+        return_data = rpc_to_phone(rpc_buf, offset);
+
+        memcpy( &rc, &return_data, sizeof(int));
+        PRINTKL("rc=%d",rc);
+        kfree(rpc_buf);
+	 return rc;
+
+}
+bool gpio_is_valid__remote(int number){
+
+        bool rc;
+
+        void * rpc_buf;
+        void * return_data;
+        int msg_len;
+        uint64_t rpc_code;
+        unsigned long int offset;
+        PRINTKL("");
+        offset=0;
+        rpc_code= GPIO_IS_VALID_RPC_CODE;
+        msg_len=  sizeof(unsigned)+sizeof(bool)+sizeof(rpc_code);
+        rpc_buf =  kmalloc(PAGE_SIZE, GFP_KERNEL);
+        memcpy(rpc_buf+offset,&rpc_code , sizeof(rpc_code));
+        offset+=sizeof(rpc_code);
+
+        memcpy(rpc_buf+offset, &number , sizeof(int) );
+        offset+=sizeof(unsigned);
+
+
+        return_data = rpc_to_phone(rpc_buf, offset);
+
+        memcpy( &rc, &return_data, sizeof(bool));
+        PRINTKL("rc=%d",rc);
+        kfree(rpc_buf);
+	 return rc;
 }
 void gpio_set_value__remote(unsigned gpio, int value)
 {
@@ -1655,92 +1929,6 @@ int of_get_named_gpio__remote(struct device_node *np,const char *propname, int i
 
 }
      
-int clk_disable__remote(struct clk *clk)
-{
-	int rc;
-	
-        void * rpc_buf;
-        void * return_data;
-        int msg_len;
-        uint64_t rpc_code; 
-        unsigned long int offset;
-	PRINTKL("");
-        offset=0;
-        rpc_code= CLK_DISABLE_RPC_CODE;
-        msg_len=  8+sizeof(rpc_code);
-        rpc_buf =  kmalloc(PAGE_SIZE, GFP_KERNEL);
-        memcpy(rpc_buf+offset,&rpc_code , sizeof(rpc_code));
-        offset+=sizeof(rpc_code);
-        memcpy(rpc_buf+offset, &clk , 8 );
-        offset+=8;
-
-        return_data = rpc_to_phone(rpc_buf, offset);
-
-	memcpy( &rc, &return_data, sizeof(int));
-	PRINTKL("rc=%d",rc);
-	if(rc!=999){
-		PRINTKL("charm is disconnected or phone crashed");
-		BUG();
-	}
-	kfree(rpc_buf);
-	 return rc;
-}
-
-
-int clk_unprepare__remote(struct clk *clk)
-{
-	int rc;
-	
-        void * rpc_buf;
-        void * return_data;
-        int msg_len;
-        uint64_t rpc_code; 
-        unsigned long int offset;
-	PRINTKL("");
-        offset=0;
-        rpc_code= CLK_UNPREPARE_RPC_CODE;
-        msg_len=  8+sizeof(rpc_code);
-        rpc_buf =  kmalloc(PAGE_SIZE, GFP_KERNEL);
-        memcpy(rpc_buf+offset,&rpc_code , sizeof(rpc_code));
-        offset+=sizeof(rpc_code);
-        memcpy(rpc_buf+offset, &clk , 8 );
-        offset+=8;
-
-        return_data = rpc_to_phone(rpc_buf, offset);
-
-	memcpy( &rc, &return_data, sizeof(int));
-	PRINTKL("rc=%d",rc);
-	kfree(rpc_buf);
-	 return rc;
-}
-
-
-int clk_put__remote(struct clk *clk)
-{
-	int rc;
-	
-        void * rpc_buf;
-        void * return_data;
-        int msg_len;
-        uint64_t rpc_code; 
-        unsigned long int offset;
-	PRINTKL("");
-        offset=0;
-        rpc_code= CLK_PUT_RPC_CODE;
-        msg_len=  8+sizeof(rpc_code);
-        rpc_buf =  kmalloc(PAGE_SIZE, GFP_KERNEL);
-        memcpy(rpc_buf+offset,&rpc_code , sizeof(rpc_code));
-        offset+=sizeof(rpc_code);
-        memcpy(rpc_buf+offset, &clk , 8 );
-        offset+=8;
-
-        return_data = rpc_to_phone(rpc_buf, offset);
-
-	memcpy( &rc, &return_data, sizeof(int));
-	PRINTKL("rc=%d",rc);
-	kfree(rpc_buf);
-	 return rc;
-}
 
 
 struct device *msm_iommu_get_ctx__remote(const char *ctx_name)

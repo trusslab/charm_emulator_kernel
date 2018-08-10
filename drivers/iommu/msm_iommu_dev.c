@@ -30,6 +30,11 @@
 #include "msm_iommu_hw-8xxx.h"
 #include "msm_iommu.h"
 
+
+//Charm
+#include <linux/Charm/prints.h>
+#include <linux/Charm/rpc.h>
+
 struct iommu_ctx_iter_data {
 	/* input */
 	const char *name;

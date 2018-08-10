@@ -350,6 +350,12 @@ int __must_check kstrtos16_from_user(const char __user *s, size_t count, unsigne
 int __must_check kstrtou8_from_user(const char __user *s, size_t count, unsigned int base, u8 *res);
 int __must_check kstrtos8_from_user(const char __user *s, size_t count, unsigned int base, s8 *res);
 
+//Charm
+#define strict_strtoul  kstrtoul
+#define strict_strtol   kstrtol
+#define strict_strtoull kstrtoull
+#define strict_strtoll  kstrtoll
+//Charm end
 static inline int __must_check kstrtou64_from_user(const char __user *s, size_t count, unsigned int base, u64 *res)
 {
 	return kstrtoull_from_user(s, count, base, res);
