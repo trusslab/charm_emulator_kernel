@@ -570,6 +570,14 @@ static int charm_arm_gic_irq_domain_xlate(struct irq_domain *d,
 		case 264: /* 0x108 */
 			*out_hwirq = 84;
 			break;
+		//spi
+		case 481: 
+			*out_hwirq =85;
+		break;
+		//sensor BCM
+		case 611: 
+			*out_hwirq =86;
+		break;
 		default:
 			break;
 
@@ -592,7 +600,13 @@ unsigned int irq_create_of_mapping(struct of_phandle_args *irq_data)
 //Charm start
 	if     (   strcmp(of_node_full_name(irq_data->np),"/soc/interrupt-controller@f9000000")
 		&& strcmp(of_node_full_name(irq_data->np),"/soc/wcd9xxx-irq")	
-		&& strcmp(of_node_full_name(irq_data->np),"/soc/pinctrl@fd510000/gp/msm_gpio")	){
+		&& strcmp(of_node_full_name(irq_data->np),"/soc/pinctrl@fd510000/gp/msm_gpio")	
+		&& strcmp(of_node_full_name(irq_data->np),"/interrupt-controller@11001000") 
+		&& strcmp(of_node_full_name(irq_data->np),"/pinctrl@14CC0000/gpe0") 
+		&& strcmp(of_node_full_name(irq_data->np),"/pinctrl@14CC0000/gpe5") 
+		&& strcmp(of_node_full_name(irq_data->np),"/pinctrl@14CC0000/gpe6") 
+		&& strcmp(of_node_full_name(irq_data->np),"/pinctrl@14CC0000/gpej1") 
+		){
 
 		domain = irq_data->np ? irq_find_host(irq_data->np) : irq_default_domain;
 		if (!domain) {

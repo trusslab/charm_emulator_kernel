@@ -21,6 +21,8 @@
 #include <linux/iio/buffer.h>
 #include <linux/iio/trigger_consumer.h>
 #include <linux/iio/triggered_buffer.h>
+//Charm
+#include <linux/Charm/rpc.h>
 
 struct ad7476_state;
 

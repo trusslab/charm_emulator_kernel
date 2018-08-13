@@ -105,7 +105,12 @@
 #define CLK_GET_SYS_RPC_CODE 64
 #define GPIO_EXPORT_RPC_CODE 65
 #define GPIO_IS_VALID_RPC_CODE 66
+/* Exynos */
+#define EXYNOS_UPDATE_IP_IDLE_STATUS 67
+#define EXYNOS_GET_IDLE_IP_INDEX 68
+#define EXYNOS_SMC 69
 
+#define REGULATOR_GET_VOLTAGE_RPC_CODE 70
 //#undef PRINTKL
 //#define PRINTKL(fmt,args...)
 
@@ -547,8 +552,8 @@ int clk_prepare_enable__remote(struct clk *clk)
 }
 void clk_disable_unprepare__remote(struct clk *clk)
 {
-         clk_disable(clk);
-         clk_unprepare(clk);
+         clk_disable__remote(clk);
+         clk_unprepare__remote(clk);
 }
 struct rpm_regulator *rpm_regulator_get__remote(struct device *dev, const char *con_id)
 {
@@ -970,6 +975,32 @@ int regulator_set_voltage__remote(struct regulator *regul, int vmin, int vmax)
 	kfree(rpc_buf);
 	 return rc;
 }
+int regulator_get_voltage__remote(struct regulator *regul)
+{
+
+	int rc;
+	
+        void * rpc_buf;
+        void * return_data;
+        int msg_len;
+        uint64_t rpc_code; 
+        unsigned long int offset;
+	PRINTKL("");
+        offset=0;
+        rpc_code= REGULATOR_GET_VOLTAGE_RPC_CODE;
+        rpc_buf =  kmalloc(PAGE_SIZE, GFP_KERNEL);
+        memcpy(rpc_buf+offset,&rpc_code , sizeof(rpc_code));
+        offset+=sizeof(rpc_code);
+        memcpy(rpc_buf+offset, &regul , 8 );
+        offset+=8;
+
+        return_data = rpc_to_phone(rpc_buf, offset);
+
+	memcpy( &rc, &return_data, sizeof(int));
+	PRINTKL("rc=%d",rc);
+	kfree(rpc_buf);
+	return rc;
+}
 int regulator_set_optimum_mode__remote(struct regulator * regul, int iop)
 {
 
@@ -1230,6 +1261,36 @@ int pinctrl_select_state__remote(struct pinctrl *p, struct pinctrl_state *state)
         PRINTKL("rc=%d",rc);
         kfree(rpc_buf);
 	 return rc;
+}
+struct pinctrl * __must_check pinctrl_get_select__remote(
+					struct device *dev, const char *name)
+{
+	struct pinctrl *p;
+	struct pinctrl_state *s;
+	int ret;
+
+	p = pinctrl_get__remote(dev);
+	if (IS_ERR(p))
+		return p;
+
+	s = pinctrl_lookup_state__remote(p, name);
+	if (IS_ERR(s)) {
+		pinctrl_put__remote(p);
+		return ERR_PTR(PTR_ERR(s));
+	}
+
+	ret = pinctrl_select_state__remote(p, s);
+	if (ret < 0) {
+		pinctrl_put__remote(p);
+		return ERR_PTR(ret);
+	}
+
+	return p;
+}
+struct pinctrl * __must_check pinctrl_get_select_default__remote(
+					struct device *dev)
+{
+	return pinctrl_get_select__remote(dev, PINCTRL_STATE_DEFAULT);
 }
 void gpio_set_value_cansleep__remote(unsigned gpio, int value)
 {
@@ -1930,6 +1991,23 @@ int of_get_named_gpio__remote(struct device_node *np,const char *propname, int i
 }
      
 
+int gpio_request_array__remote(const struct gpio *array, size_t num)
+{
+	int i, err;
+
+	for (i = 0; i < num; i++, array++) {
+		err = gpio_request_one__remote(array->gpio, array->flags, array->label);
+		if (err)
+			goto err_free;
+	}
+	return 0;
+
+err_free:
+	while (i--)
+		gpio_free__remote((--array)->gpio);
+	return err;
+}
+
 
 struct device *msm_iommu_get_ctx__remote(const char *ctx_name)
 {
@@ -2576,4 +2654,105 @@ signed long clk_ops_list_rate__remote( struct clk *clk , uint32_t i)
          kfree(rpc_buf);
           return rrate;
 
+}
+/* Exynos */
+void exynos_update_ip_idle_status__remote(int ip_index, int idle)
+{
+	int rc;
+
+        void *rpc_buf;
+        void *return_data;
+        int msg_len;
+        uint64_t rpc_code;
+        unsigned long int offset;
+        PRINTKL("");
+        offset=0;
+        rpc_code= EXYNOS_UPDATE_IP_IDLE_STATUS;
+        msg_len=  sizeof(int)+sizeof(int)+sizeof(rpc_code);
+        rpc_buf =  kmalloc(PAGE_SIZE, GFP_KERNEL);
+        memcpy(rpc_buf+offset,&rpc_code , sizeof(rpc_code));
+        offset+=sizeof(rpc_code);
+
+        memcpy(rpc_buf+offset, &ip_index , sizeof(int) );
+        offset+=sizeof(int);
+
+        memcpy(rpc_buf+offset, &idle, sizeof(int) );
+        offset+=sizeof(int);
+
+
+
+        return_data = rpc_to_phone(rpc_buf, offset);
+
+        memcpy( &rc, &return_data, sizeof(int));
+        PRINTKL("rc=%d",rc);
+        kfree(rpc_buf);
+	return;
+}
+
+int exynos_get_idle_ip_index__remote(const char *ip_name)
+{
+	int rc;
+
+	void * rpc_buf;
+	void * return_data;
+	int msg_len;
+	uint64_t rpc_code;
+	unsigned long int offset;
+
+	offset=0;
+	rpc_code=EXYNOS_GET_IDLE_IP_INDEX;
+	rpc_buf =  kmalloc(PAGE_SIZE, GFP_KERNEL);
+	memcpy(rpc_buf+offset, &rpc_code , sizeof(rpc_code));
+	offset+=sizeof(rpc_code);
+
+	msg_len=strlen(ip_name)+1;	
+	memcpy(rpc_buf+offset, &msg_len , sizeof(msg_len));
+	offset+= sizeof(msg_len);	
+	memcpy(rpc_buf+offset, ip_name, msg_len);
+	offset+= msg_len;
+
+ 	return_data = rpc_to_phone(rpc_buf, offset);
+	
+        memcpy( &rc, &return_data, sizeof(int));
+
+	PRINTKL("[2]");
+        kfree(rpc_buf);
+	return rc;
+}
+
+int exynos_smc__remote(unsigned long cmd, unsigned long arg1, unsigned long arg2, unsigned long arg3)
+{
+	int rc;
+
+        void *rpc_buf;
+        void *return_data;
+        int msg_len;
+        uint64_t rpc_code;
+        unsigned long int offset;
+        PRINTKL("");
+        offset=0;
+        rpc_code= EXYNOS_SMC;
+        msg_len=  sizeof(unsigned long)+sizeof(unsigned long)+sizeof(unsigned long)+sizeof(unsigned long)+sizeof(rpc_code);
+        rpc_buf =  kmalloc(PAGE_SIZE, GFP_KERNEL);
+        memcpy(rpc_buf+offset,&rpc_code , sizeof(rpc_code));
+        offset+=sizeof(rpc_code);
+
+        memcpy(rpc_buf+offset, &cmd , sizeof(unsigned long) );
+        offset+=sizeof(unsigned long);
+
+        memcpy(rpc_buf+offset, &arg1, sizeof(unsigned long) );
+        offset+=sizeof(unsigned long);
+
+        memcpy(rpc_buf+offset, &arg2 , sizeof(unsigned long) );
+        offset+=sizeof(unsigned long);
+
+        memcpy(rpc_buf+offset, &arg3, sizeof(unsigned long) );
+        offset+=sizeof(unsigned long);
+
+        return_data = rpc_to_phone(rpc_buf, offset);
+
+        memcpy( &rc, &return_data, sizeof(int));
+        PRINTKL("rc=%d",rc);
+        kfree(rpc_buf);
+	return;
 }

@@ -25,6 +25,8 @@
 #include <linux/iio/triggered_buffer.h>
 
 #include <linux/platform_data/ad7298.h>
+//Charm
+#include <linux/Charm/rpc.h>
 
 #define AD7298_WRITE	BIT(15) /* write to the control register */
 #define AD7298_REPEAT	BIT(14) /* repeated conversion enable */

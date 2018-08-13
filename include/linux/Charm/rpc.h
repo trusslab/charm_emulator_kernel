@@ -51,6 +51,7 @@
 #define devm_regulator_get(dev,con_id) 					regulator_get__remote(dev,con_id) 						
 #define regulator_enable(regul) 					regulator_enable__remote(regul) 					
 #define regulator_set_voltage(regul,vmin,vmax) 				regulator_set_voltage__remote(regul,vmin,vmax) 				
+#define regulator_get_voltage(regul)					regulator_get_voltage__remote(regul)
 #define regulator_set_optimum_mode(regul,iop) 				regulator_set_optimum_mode__remote(regul,iop) 						
 #define regulator_count_voltages(regul) 				regulator_count_voltages__remote(regul) 					
 #define regulator_disable(regul) 					regulator_disable__remote(regul) 					
@@ -71,9 +72,13 @@
 #define devm_pinctrl_get(dev) 						devm_pinctrl_get__remote(dev) 									
 #define pinctrl_lookup_state(p,name) 					pinctrl_lookup_state__remote(p,name) 						
 #define pinctrl_select_state(p,state) 					pinctrl_select_state__remote(p,state) 						
+#define pinctrl_get_select(dev, name)					pinctrl_get_select__remote(dev, name)
+#define pinctrl_get_select_default(dev)					pinctrl_get_select_default__remote(dev)
         							       							
 #define gpio_request_one(gpio, flags, label) 				gpio_request_one__remote(gpio, flags, label) 						
+#define devm_gpio_request_one(dev, gpio, flags, label) 			gpio_request_one__remote(gpio, flags, label) 						
 #define gpio_request(gpio,label)					gpio_request__remote(gpio,label)
+#define devm_gpio_request(dev, gpio, label)				gpio_request__remote(gpio,label)
 #define of_get_gpio(np,index) 						of_get_gpio__remote(np,index) 							
 #define of_get_named_gpio(np,propname,index) 				of_get_named_gpio__remote(np,propname,index) 						
 #define gpio_set_value_cansleep(gpio,value) 				gpio_set_value_cansleep__remote(gpio,value) 					
@@ -86,6 +91,7 @@
 #define gpio_direction_output(gpio,value)				gpio_direction_output__remote(gpio,value)	
 #define gpio_free(gpio) 						gpio_free__remote(gpio)
 #define gpio_free_array(array,num)					gpio_free_array__remote(array,num) 
+#define gpio_request_array(array, num)					gpio_request_array__remote(array, num)
  
 
 #define IS_ERR(ptr)							IS_ERR__remote(ptr)					 
@@ -115,6 +121,19 @@
 #define power_supply_set_hi_power_state(psy,value)			power_supply_set_hi_power_state__remote(psy,value)
 #define power_supply_set_low_power_state(psy,value)			power_supply_set_low_power_state__remote(psy,value)
 
+/* Exynos */
+#define exynos_update_ip_idle_status(ip_index, idle)			exynos_update_ip_idle_status__remote(ip_index, idle)
+#define exynos_get_idle_ip_index(ip_name)				exynos_get_idle_ip_index__remote(ip_name)
+#define exynos_smc(cmd, arg1, arg2, arg3)				exynos_smc__remote(cmd, arg1, arg2, arg3)
+				      
+/* Unhandled */
+#define gpiod_to_irq(desc) BUG()
+#define gpiod_direction_input(desc) BUG()
+#define gpiod_direction_output(desc, value) BUG()
+#define devm_gpiod_get_index(dev, con_id, index) BUG()
+#define regulator_bulk_enable(num, cons) BUG()
+#define regulator_bulk_disable(num, cons) BUG()
+#define devm_regulator_get_optional(dev, id) BUG()
 
 
 //----------------------------------------------------------------------------------------
@@ -136,6 +155,7 @@ int clk_reset__remote(struct clk *clk, enum clk_reset_action action);
 struct regulator *regulator_get__remote(struct device * dev, const char *con_id);
 int regulator_enable__remote(struct regulator * regul);
 int regulator_set_voltage__remote(struct regulator *regul, int vmin, int vmax);
+int regulator_get_voltage__remote(struct regulator *regul);
 int regulator_set_optimum_mode__remote(struct regulator * regul, int iop);
 int regulator_count_voltages__remote(struct regulator *regul);
 int regulator_disable__remote(struct regulator * regul);
@@ -160,6 +180,10 @@ void devm_pinctrl_put__remote(struct pinctrl *p);
 struct pinctrl *devm_pinctrl_get__remote(struct device *dev);
 struct pinctrl_state *pinctrl_lookup_state__remote(struct pinctrl *p,const char *name);
 int pinctrl_select_state__remote(struct pinctrl *p, struct pinctrl_state *state);
+struct pinctrl * __must_check pinctrl_get_select__remote(
+					struct device *dev, const char *name);
+struct pinctrl * __must_check pinctrl_get_select_default__remote(
+					struct device *dev);
 
 int gpio_request_one__remote(unsigned gpio,unsigned long flags, const char *label);
 int gpio_request__remote(unsigned gpio, const char *label);
@@ -175,6 +199,7 @@ int gpio_direction_input__remote(unsigned gpio);
 int gpio_direction_output__remote(unsigned gpio, int value);
 void gpio_free__remote(unsigned gpio);
 void gpio_free_array__remote(const struct gpio *array, size_t num);
+int gpio_request_array__remote(const struct gpio *array, size_t num);
 
 bool IS_ERR__remote(const void *ptr);
 long IS_ERR_OR_NULL__remote(const void *ptr);
@@ -207,5 +232,10 @@ struct iommu_group *iommu_group_find__remote(const char *name);
 struct power_supply *power_supply_get_by_name__remote(const char *name);
 int power_supply_set_hi_power_state__remote(struct power_supply *psy, int value);
 int power_supply_set_low_power_state__remote(struct power_supply *psy, int value);
+/* Exynos */
+void exynos_update_ip_idle_status__remote(int ip_index, int idle);
+int exynos_get_idle_ip_index__remote(const char *ip_name);
+int exynos_smc__remote(unsigned long cmd, unsigned long arg1, unsigned long arg2, unsigned long arg3);
+
 
 #endif /* __LINUX_CHARM_RPC_H__ */

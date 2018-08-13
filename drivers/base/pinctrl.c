@@ -65,7 +65,10 @@ int pinctrl_bind_pins(struct device *dev)
                 strcmp(compatible,"qcom,kgsl-busmon")&&
                 strcmp(compatible,"qcom,devbw")&&
                 strcmp(compatible,"qcom,bimc-bwmon")&&
-                strcmp(compatible,"kgsl-3d0")
+                strcmp(compatible,"kgsl-3d0")&&
+//sensor devices
+                strcmp(compatible,"samsung,exynos-spi")&&
+                strcmp(compatible,"ssp,BCM4773")
 		)
 		{
 			rpc_do_flag=0;

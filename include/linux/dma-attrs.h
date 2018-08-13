@@ -18,10 +18,10 @@ enum dma_attr {
 	DMA_ATTR_NO_KERNEL_MAPPING,
 	DMA_ATTR_SKIP_CPU_SYNC,
 	DMA_ATTR_FORCE_CONTIGUOUS,
-//Ardalan start
+//Charm start
         DMA_ATTR_STRONGLY_ORDERED,
         DMA_ATTR_SKIP_ZEROING,
-//Ardalan end
+//Charm end
 	DMA_ATTR_MAX,
 };
 

@@ -25,6 +25,8 @@
 #include <linux/iio/sysfs.h>
 #include <linux/regulator/consumer.h>
 #include <linux/bitops.h>
+//Charm
+#include <linux/Charm/rpc.h>
 
 #define MCP4922_NUM_CHANNELS	2
 

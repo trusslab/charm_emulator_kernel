@@ -22,6 +22,8 @@
 #include <linux/iio/sysfs.h>
 
 #include <linux/platform_data/ad5449.h>
+//Charm
+#include <linux/Charm/rpc.h>
 
 #define AD5449_MAX_CHANNELS		2
 #define AD5449_MAX_VREFS		2

@@ -35,6 +35,8 @@
 #include <linux/iio/trigger.h>
 #include <linux/iio/trigger_consumer.h>
 #include <linux/iio/triggered_buffer.h>
+//Charm
+#include <linux/Charm/rpc.h>
 
 #define BMC150_ACCEL_DRV_NAME			"bmc150_accel"
 #define BMC150_ACCEL_IRQ_NAME			"bmc150_accel_event"

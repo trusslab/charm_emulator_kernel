@@ -22,6 +22,8 @@
 #include <linux/iio/events.h>
 
 #include <linux/platform_data/ad7291.h>
+//Charm
+#include <linux/Charm/rpc.h>
 
 /*
  * Simplified handling

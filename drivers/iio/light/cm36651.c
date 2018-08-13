@@ -17,6 +17,8 @@
 #include <linux/iio/iio.h>
 #include <linux/iio/sysfs.h>
 #include <linux/iio/events.h>
+//Charm
+#include <linux/Charm/rpc.h>
 
 /* Slave address 0x19 for PS of 7 bit addressing protocol for I2C */
 #define CM36651_I2C_ADDR_PS		0x19

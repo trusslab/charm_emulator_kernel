@@ -17,6 +17,8 @@
 #include <linux/of.h>
 #include <asm/unaligned.h>
 #include <linux/iio/common/st_sensors.h>
+//Charm
+#include <linux/Charm/rpc.h>
 
 
 #define ST_SENSORS_WAI_ADDRESS		0x0f

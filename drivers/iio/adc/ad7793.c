@@ -26,6 +26,8 @@
 #include <linux/iio/triggered_buffer.h>
 #include <linux/iio/adc/ad_sigma_delta.h>
 #include <linux/platform_data/ad7793.h>
+//Charm
+#include <linux/Charm/rpc.h>
 
 /* Registers */
 #define AD7793_REG_COMM		0 /* Communications Register (WO, 8-bit) */
@@ -257,7 +259,7 @@ static int ad7793_setup(struct iio_dev *indio_dev,
 	unsigned int vref_mv)
 {
 	struct ad7793_state *st = iio_priv(indio_dev);
-	int i, ret;
+	int i, ret = -1;
 	unsigned long long scale_uv;
 	u32 id;
 
@@ -266,7 +268,7 @@ static int ad7793_setup(struct iio_dev *indio_dev,
 		return ret;
 
 	/* reset the serial interface */
-	ret = ad_sd_reset(&st->sd, 32);
+	ret = spi_write(st->sd.spi, (u8 *)&ret, sizeof(ret));
 	if (ret < 0)
 		goto out;
 	usleep_range(500, 2000); /* Wait for at least 500us */

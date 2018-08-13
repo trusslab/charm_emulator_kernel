@@ -487,14 +487,8 @@ static void __init parse_setup_data(void)
 #define EARLY_DEBUG_HYPERCALL 3	   
 	int i;
 	kvm_hypercall4(KVM_HC_CHARM, EARLY_DEBUG_HYPERCALL, __LINE__, 0,0);
-	/* gpu-bwmon */
-        ret = kvm_hypercall4(KVM_HC_CHARM, PAGE_TRACK_HYPERCALL, 0, 0, 0xfc390);
-        ret = kvm_hypercall4(KVM_HC_CHARM, PAGE_TRACK_HYPERCALL, 0, 0, 0xfc381);
-
-	/* kgsl-3d0 */
-	for (i = 0; i < 0x40; i++)
-      		ret = kvm_hypercall4(KVM_HC_CHARM, PAGE_TRACK_HYPERCALL, 0, 0, 0xfdb00 + i);
-
+	//spi
+        ret = kvm_hypercall4(KVM_HC_CHARM, PAGE_TRACK_HYPERCALL, 0, 0, 0xf4d30);
 //Charm end	
 
 }

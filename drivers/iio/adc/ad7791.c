@@ -28,6 +28,8 @@
 #include <linux/iio/adc/ad_sigma_delta.h>
 
 #include <linux/platform_data/ad7791.h>
+//Charm
+#include <linux/Charm/rpc.h>
 
 #define AD7791_REG_COMM			0x0 /* For writes */
 #define AD7791_REG_STATUS		0x0 /* For reads */

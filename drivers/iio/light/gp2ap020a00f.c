@@ -53,6 +53,8 @@
 #include <linux/iio/trigger.h>
 #include <linux/iio/trigger_consumer.h>
 #include <linux/iio/triggered_buffer.h>
+//Charm
+#include <linux/Charm/rpc.h>
 
 #define GP2A_I2C_NAME "gp2ap020a00f"
 

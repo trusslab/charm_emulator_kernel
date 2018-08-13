@@ -19,6 +19,8 @@
 #include <linux/iio/sysfs.h>
 
 #include <linux/platform_data/ad7303.h>
+//Charm
+#include <linux/Charm/rpc.h>
 
 #define AD7303_CFG_EXTERNAL_VREF BIT(15)
 #define AD7303_CFG_POWER_DOWN(ch) BIT(11 + (ch))
@@ -184,9 +186,9 @@ static const struct iio_chan_spec_ext_info ad7303_ext_info[] = {
 	.address = (chan),					\
 	.scan_type = {						\
 		.sign = 'u',					\
-		.realbits = 8,					\
-		.storagebits = 8,				\
-		.shift = 0,					\
+		.realbits = '8',				\
+		.storagebits = '8',				\
+		.shift = '0',					\
 	},							\
 	.ext_info = ad7303_ext_info,				\
 }

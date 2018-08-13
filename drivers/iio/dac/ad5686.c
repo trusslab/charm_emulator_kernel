@@ -18,6 +18,8 @@
 
 #include <linux/iio/iio.h>
 #include <linux/iio/sysfs.h>
+//Charm
+#include <linux/Charm/rpc.h>
 
 #define AD5686_DAC_CHANNELS			4
 

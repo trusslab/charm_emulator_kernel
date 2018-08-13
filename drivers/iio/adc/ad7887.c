@@ -25,6 +25,8 @@
 #include <linux/iio/triggered_buffer.h>
 
 #include <linux/platform_data/ad7887.h>
+//Charm
+#include <linux/Charm/rpc.h>
 
 #define AD7887_REF_DIS		BIT(5)	/* on-chip reference disable */
 #define AD7887_DUAL		BIT(4)	/* dual-channel mode */

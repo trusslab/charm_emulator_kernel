@@ -162,3 +162,7 @@ obj-$(CONFIG_POWERCAP)		+= powercap/
 obj-$(CONFIG_MCB)		+= mcb/
 obj-$(CONFIG_RAS)		+= ras/
 obj-$(CONFIG_THUNDERBOLT)	+= thunderbolt/
+# Charm start
+#Sensorhub
+obj-$(CONFIG_SENSORS_SSP)       += sensorhub/
+# Charm end

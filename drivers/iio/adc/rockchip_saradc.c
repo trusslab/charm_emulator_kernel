@@ -22,6 +22,8 @@
 #include <linux/completion.h>
 #include <linux/regulator/consumer.h>
 #include <linux/iio/iio.h>
+//Charm
+#include <linux/Charm/rpc.h>
 
 #define SARADC_DATA			0x00
 #define SARADC_DATA_MASK		0x3ff

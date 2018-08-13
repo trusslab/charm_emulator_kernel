@@ -15,6 +15,8 @@
 #include <linux/module.h>
 #include <linux/iio/iio.h>
 #include <linux/regulator/consumer.h>
+//Charm
+#include <linux/Charm/rpc.h>
 
 struct adc128 {
 	struct spi_device *spi;

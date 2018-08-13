@@ -24,6 +24,8 @@
 #include <linux/iio/iio.h>
 #include <linux/iio/sysfs.h>
 #include <linux/iio/frequency/adf4350.h>
+//Charm
+#include <linux/Charm/rpc.h>
 
 enum {
 	ADF4350_FREQ,

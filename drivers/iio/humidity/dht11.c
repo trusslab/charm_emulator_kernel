@@ -34,6 +34,8 @@
 #include <linux/of_gpio.h>
 
 #include <linux/iio/iio.h>
+//Charm
+#include <linux/Charm/rpc.h>
 
 #define DRIVER_NAME	"dht11"
 

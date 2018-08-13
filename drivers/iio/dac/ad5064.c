@@ -20,6 +20,8 @@
 
 #include <linux/iio/iio.h>
 #include <linux/iio/sysfs.h>
+//Charm
+#include <linux/Charm/rpc.h>
 
 #define AD5064_MAX_DAC_CHANNELS			8
 #define AD5064_MAX_VREFS			4

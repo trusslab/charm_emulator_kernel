@@ -12,6 +12,8 @@
 #include <linux/i2c.h>
 #include <linux/iio/iio.h>
 #include <linux/regulator/consumer.h>
+//Charm
+#include <linux/Charm/rpc.h>
 
 #define MAX5821_MAX_DAC_CHANNELS		2
 

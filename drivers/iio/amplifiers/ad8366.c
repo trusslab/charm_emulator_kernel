@@ -18,6 +18,8 @@
 
 #include <linux/iio/iio.h>
 #include <linux/iio/sysfs.h>
+//Charm
+#include <linux/Charm/rpc.h>
 
 struct ad8366_state {
 	struct spi_device	*spi;

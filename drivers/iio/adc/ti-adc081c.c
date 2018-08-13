@@ -13,6 +13,8 @@
 
 #include <linux/iio/iio.h>
 #include <linux/regulator/consumer.h>
+//Charm
+#include <linux/Charm/rpc.h>
 
 struct adc081c {
 	struct i2c_client *i2c;

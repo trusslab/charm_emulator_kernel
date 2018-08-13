@@ -19,6 +19,8 @@
 #include <linux/iio/iio.h>
 #include <linux/iio/sysfs.h>
 #include <linux/iio/frequency/ad9523.h>
+//Charm
+#include <linux/Charm/rpc.h>
 
 #define AD9523_READ	(1 << 15)
 #define AD9523_WRITE	(0 << 15)

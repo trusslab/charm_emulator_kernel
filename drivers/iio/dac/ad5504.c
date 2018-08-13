@@ -21,6 +21,8 @@
 #include <linux/iio/sysfs.h>
 #include <linux/iio/events.h>
 #include <linux/iio/dac/ad5504.h>
+//Charm
+#include <linux/Charm/rpc.h>
 
 #define AD5504_RES_MASK			GENMASK(11, 0)
 #define AD5504_CMD_READ			BIT(15)

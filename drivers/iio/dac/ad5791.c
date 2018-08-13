@@ -21,6 +21,8 @@
 #include <linux/iio/iio.h>
 #include <linux/iio/sysfs.h>
 #include <linux/iio/dac/ad5791.h>
+//Charm
+#include <linux/Charm/rpc.h>
 
 #define AD5791_DAC_MASK			GENMASK(19, 0)
 

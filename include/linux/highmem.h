@@ -39,13 +39,13 @@ extern unsigned long totalhigh_pages;
 
 void kmap_flush_unused(void);
 
-//Ardalan start: FIXME
+//Charm start: FIXME
 #ifdef CONFIG_ARCH_WANT_KMAP_ATOMIC_FLUSH
 void kmap_atomic_flush_unused(void);
 #else
 static inline void kmap_atomic_flush_unused(void) { }
 #endif
-//Ardalan end
+//Charm end
 
 struct page *kmap_to_page(void *addr);
 
@@ -87,7 +87,7 @@ static inline void __kunmap_atomic(void *addr)
 #define kmap_atomic_to_page(ptr)	virt_to_page(ptr)
 
 #define kmap_flush_unused()	do {} while(0)
-//Ardalan: FIXME
+//Charm: FIXME
 #define kmap_atomic_flush_unused()      do {} while (0)
 #endif
 

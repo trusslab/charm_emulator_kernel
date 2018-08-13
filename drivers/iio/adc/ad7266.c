@@ -23,6 +23,8 @@
 #include <linux/iio/triggered_buffer.h>
 
 #include <linux/platform_data/ad7266.h>
+//Charm
+#include <linux/Charm/rpc.h>
 
 struct ad7266_state {
 	struct spi_device	*spi;

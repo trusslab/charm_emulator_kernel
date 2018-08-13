@@ -28,6 +28,8 @@
 #include <linux/iio/events.h>
 #include <linux/iio/trigger_consumer.h>
 #include <linux/iio/triggered_buffer.h>
+//Charm
+#include <linux/Charm/rpc.h>
 
 #define BMG160_DRV_NAME		"bmg160"
 #define BMG160_IRQ_NAME		"bmg160_event"
